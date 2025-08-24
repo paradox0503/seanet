@@ -49,7 +49,7 @@ DATASET_CONFIGS = [
     DatasetConfig("F10", "/data/user_jialinhan/data_big/F10-dataset.bin", 256, 200000, 10000, 100000000),
     DatasetConfig("origin", "/data/user_jialinhan/data_big/origin-dataset.bin", 256, 200000, 10000, 100000000),
     DatasetConfig("sald", "/data/user_jialinhan/data_big/sald-dataset.bin", 128, 200000, 10000, 100000000),
-    # DatasetConfig("seismic", "/data/user_jialinhan/data_big/seismic-dataset.bin", 256, 200000, 10000, 100000000)
+    DatasetConfig("seismic", "/data/user_jialinhan/data_big/seismic-dataset.bin", 256, 200000, 10000, 100000000)
 ]
 embed_CONFIGS = [    #   database path                                               query path
     EmbedConfig("astro", "data_big/astro-dataset.bin",    "data_big/astro-query.bin",256,100),
@@ -58,7 +58,7 @@ embed_CONFIGS = [    #   database path                                          
     EmbedConfig("F10", "data_big/F10-dataset.bin",    "data_big/F10-query.bin",256,1000),
     EmbedConfig("origin", "data_big/origin-dataset.bin",    "data_big/origin-query.bin",256,1000),
     EmbedConfig("sald", "data_big/sald-dataset.bin",    "data_big/sald-query.bin",128,1000),
-    # EmbedConfig("seismic", "data_big/seismic-dataset.bin",    "data_big/seismic-query.bin",256,1000),
+    EmbedConfig("seismic", "data_big/seismic-dataset.bin",    "data_big/seismic-query.bin",256,1000),
     ]
 
 class Experiment:
