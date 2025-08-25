@@ -86,68 +86,31 @@ def calculate_segment_variance_sums(train_data, segments=16):
 # variance_sums = calculate_segment_variance_sums(train_data)
 
 
-
-def getSamples(conf: Configuration, path_db, train_indices_path, val_indices_path, dim_seq, size_train, size_val, size_db, train_path, val_path):
-    dim_series = dim_seq
+def getSamples(conf: Configuration,path_db,train_indices_path,val_indices_path,dim_seq,size_train,size_val,size_db,train_path,val_path):
+    dim_series =dim_seq
+    # size_train = conf.getHP('size_train')
+    # size_val = conf.getHP('size_val')
     device = conf.getHP('device')
-    mode = conf.getHP('mode')
 
-    if 1:  # 保持原有的条件判断
+    mode=conf.getHP('mode')
+    # if mode=="pretrain":
+    if 1:
         print("pretrain_data")
+        train_path = train_path
+        val_path = val_path
 
-        import pdb; pdb.set_trace()
         if os.path.exists(train_path) and os.path.exists(val_path):
-            # 生成训练集随机索引（0到1亿之间）并排序
-            train_indices = np.random.randint(0, size_db, size=size_train)
-            train_indices.sort()  # 排序确保顺序读取
-
-            # 生成验证集随机索引（0到1亿之间）并排序
-            val_indices = np.random.randint(0, size_db, size=size_val)
-            val_indices.sort()  # 排序确保顺序读取
-
-            # 读取训练集数据
-            train_data = []
-            with open(train_path, 'rb') as f:
-                for idx in train_indices:
-                    # 计算偏移量：每个样本有dim_series个float32，每个占4字节
-                    offset = idx * dim_series * 4
-                    f.seek(offset)
-                    # 读取对应位置的样本数据
-                    data_sample = np.fromfile(f, dtype=np.float32, count=dim_series)
-                    train_data.append(data_sample)
-                    # 对所有训练数据计算分段方差和
-                    calculate_segment_variance_sums(train_data, segments=16)
-                    import pdb; pdb.set_trace()
 
 
-
-
-            # 读取验证集数据
-            val_data = []
-            with open(val_path, 'rb') as f:
-                for idx in val_indices:
-                    offset = idx * dim_series * 4
-                    f.seek(offset)
-                    data_sample = np.fromfile(f, dtype=np.float32, count=dim_series)
-                    val_data.append(data_sample)
-
-            # 转换为numpy数组并重塑
-            train_samples_np = np.concatenate(train_data)
-            val_samples_np = np.concatenate(val_data)
-
-            # 转换为PyTorch张量
-            train_samples = torch.from_numpy(train_samples_np)
-            val_samples = torch.from_numpy(val_samples_np)
-
+            train_samples = torch.from_numpy(np.fromfile(train_path, dtype=np.float32, count=dim_series * size_train))
+            val_samples = torch.from_numpy(np.fromfile(val_path, dtype=np.float32, count=dim_series * size_val))
         else:
             if conf.getHP('sampling_name') == 'coconut' or conf.getHP('sampling_name') == 'uniform':
-                train_samples, val_samples = sample(conf, path_db, train_indices_path, val_indices_path,
-                                                  dim_seq, size_train, size_val, size_db, train_path, val_path)
+                train_samples, val_samples = sample(conf,path_db,train_indices_path,val_indices_path,dim_seq,size_train,size_val,size_db,train_path,val_path)
             else:
-                raise ValueError(f'sampling {conf.getHP("sampling_name")} is not supported')
+                raise ValueError('sampling {:s} is not supported'.format(conf.getHP('sampling_name')))
 
-        # 根据编码器类型调整张量形状
-        if conf.getHP('encoder') in ['gru', 'lstm']:
+        if conf.getHP('encoder') == 'gru' or conf.getHP('encoder') == 'lstm':#or conf.getHP('encoder') == 'transformer':
             train_samples = train_samples.view([-1, dim_series, 1])
             val_samples = val_samples.view([-1, dim_series, 1])
         else:
@@ -157,117 +120,6 @@ def getSamples(conf: Configuration, path_db, train_indices_path, val_indices_pat
         train_samples = train_samples.to(device)
         val_samples = val_samples.to(device)
 
-    return train_samples, val_samples
-
-
-# def loadTrainValCocunut(dataset_name, dataset_path, dataset_size, train_size, val_size, series_length=256, sax_length=16, sax_cardinality=8):
-def sample0(conf: Configuration,path_db,train_indices_path,val_indices_path,dim_seq,size_train,size_val,size_db,train_path,val_path):#采样
-
-    dataset_path = path_db
-    # train_path =train_path
-    # val_path =val_path
-    # train_indices_path = val_indices_path
-    # val_indices_path = val_indices_path
-    dim_series = dim_seq
-    # size_train = size_train
-    # size_val = size_val
-    # size_db = size_db
-
-
-    os.makedirs(Path(train_path).parent, exist_ok=True)
-    os.makedirs(Path(val_path).parent, exist_ok=True)
-    os.makedirs(Path(train_indices_path).parent, exist_ok=True)
-    os.makedirs(Path(val_indices_path).parent, exist_ok=True)
-
-    dim_coconut = conf.getHP('dim_coconut')
-
-
-    sampling_method = conf.getHP('sampling_name')
-
-    if sampling_method == 'coconut':
-        if not (os.path.exists(train_indices_path) and isfile(train_indices_path)) or not (os.path.exists(val_indices_path) and isfile(val_indices_path)):
-            c_functions = CDLL(conf.getHP('coconut_libpath'))
-
-            return_code = c_functions.sample_coconut(c_char_p(dataset_path.encode('ASCII')),
-                                                    c_long(size_db),
-                                                    c_char_p(train_indices_path.encode('ASCII')),
-                                                    size_train,
-                                                    c_char_p(val_indices_path.encode('ASCII')),
-                                                    size_val,
-                                                    dim_series,
-                                                    conf.getHP('coconut_cardinality'),
-                                                    dim_coconut)
-            dlclose(c_functions._handle)
-
-            if return_code != 0:
-                print(return_code)
-    elif sampling_method == 'uniform':
-        if not (os.path.exists(train_indices_path) and isfile(train_indices_path)) or not (os.path.exists(val_indices_path) and isfile(val_indices_path)):
-            # print("inner")
-            # train_sample_indices = np.random.randint(0, int(size_db/2), size=int(size_train/2), dtype=np.int64)
-            # val_samples_indices = np.random.randint(0, int(size_db/2), size=int(size_val/2), dtype=np.int64)
-            # train_sample_indices1= np.random.randint(int(size_db/2), size_db, size=int(size_train/2), dtype=np.int64)
-            # val_samples_indices1= np.random.randint(int(size_db/2), size_db, size=int(size_val/2), dtype=np.int64)
-            # # print(type(train_sample_indices))
-            # # print(train_sample_indices.shape)
-            # train_sample_indices = np.concatenate((train_sample_indices1, train_sample_indices))
-            # val_samples_indices = np.concatenate((val_samples_indices1, val_samples_indices))
-
-            # print(train_sample_indices.shape)
-            # exit()
-            # print(size_train)
-            train_sample_indices = np.random.randint(0, size_db, size=size_train, dtype=np.int64)
-            val_samples_indices = np.random.randint(0, size_db, size=size_val, dtype=np.int64)
-
-
-            # train_sample_indices = np.random.randint(0, int(size_db/5), size=int(size_train/5), dtype=np.int64)
-            # val_samples_indices = np.random.randint(0, int(size_db/5), size=int(size_val/5), dtype=np.int64)
-            # train_sample_indices1= np.random.randint(int(size_db/5), int(2*size_db/5), size=int(size_train/5), dtype=np.int64)
-            # val_samples_indices1= np.random.randint(int(size_db/5),  int(2*size_db/5), size=int(size_val/5), dtype=np.int64)
-            # train_sample_indices2= np.random.randint(int(2*size_db/5), int(3*size_db/5), size=int(size_train/5), dtype=np.int64)
-            # val_samples_indices2= np.random.randint(int(2*size_db/5),  int(3*size_db/5), size=int(size_val/5), dtype=np.int64)
-            # train_sample_indices3= np.random.randint(int(3*size_db/5), int(4*size_db/5), size=int(size_train/5), dtype=np.int64)
-            # val_samples_indices3= np.random.randint(int(3*size_db/5),  int(4*size_db/5), size=int(size_val/5), dtype=np.int64)
-            # train_sample_indices4= np.random.randint(int(4*size_db/5), size_db, size=int(size_train/5), dtype=np.int64)
-            # val_samples_indices4= np.random.randint(int(4*size_db/5),  size_db, size=int(size_val/5), dtype=np.int64)
-            # train_sample_indices = np.concatenate((train_sample_indices,train_sample_indices1,train_sample_indices2,train_sample_indices3,train_sample_indices4))
-            # val_samples_indices = np.concatenate((val_samples_indices,val_samples_indices1,val_samples_indices2,val_samples_indices3,val_samples_indices4))
-
-
-            train_sample_indices.tofile(train_indices_path)
-            val_samples_indices.tofile(val_indices_path)
-    else:
-        raise ValueError('sampling {:s} is not supported'.format(sampling_method))
-
-    train_sample_indices = np.fromfile(train_indices_path, dtype=np.int64)
-    # print(len(train_sample_indices) )
-    # print(size_train)
-    assert len(train_sample_indices) == size_train
-
-    loaded = []
-    for index in train_sample_indices:
-        sequence = np.fromfile(dataset_path, dtype=np.float32, count=dim_series, offset=4 * dim_series * index)
-
-        if not np.isnan(np.sum(sequence)):
-            loaded.append(sequence)
-
-    train_samples = np.asarray(loaded, dtype=np.float32)
-    train_samples.tofile(train_path)
-    train_samples = torch.from_numpy(train_samples)
-
-    val_samples_indices = np.fromfile(val_indices_path, dtype=np.int64)
-    assert len(val_samples_indices) == size_val
-
-    loaded = []
-    for index in val_samples_indices:
-        sequence = np.fromfile(dataset_path, dtype=np.float32, count=dim_series, offset=4 * dim_series * index)
-
-        if not np.isnan(np.sum(sequence)):
-            loaded.append(sequence)
-
-    val_samples = np.asarray(loaded, dtype=np.float32)
-    val_samples.tofile(val_path)
-    val_samples = torch.from_numpy(val_samples)
 
     return train_samples, val_samples
 
@@ -287,34 +139,16 @@ def sample(conf: Configuration, path_db, train_indices_path, val_indices_path, d
     sampling_method = conf.getHP('sampling_name')
 
     if sampling_method == 'coconut':
-        if not (os.path.exists(train_indices_path) and isfile(train_indices_path)) or not (os.path.exists(val_indices_path) and isfile(val_indices_path)):
-            c_functions = CDLL(conf.getHP('coconut_libpath'))
-
-            return_code = c_functions.sample_coconut(
-                c_char_p(dataset_path.encode('ASCII')),
-                c_long(size_db),
-                c_char_p(train_indices_path.encode('ASCII')),
-                size_train,
-                c_char_p(val_indices_path.encode('ASCII')),
-                size_val,
-                dim_series,
-                conf.getHP('coconut_cardinality'),
-                dim_coconut
-            )
-            dlclose(c_functions._handle)
-
-            if return_code != 0:
-                print(return_code)
+        raise NotImplementedError("Coconut sampling is not implemented in this function.")
 
     elif sampling_method == 'uniform':
         if not (os.path.exists(train_indices_path) and isfile(train_indices_path)) or not (os.path.exists(val_indices_path) and isfile(val_indices_path)):
             # 生成0到1亿之间的随机整数作为索引
-            train_sample_indices = np.random.randint(0, 100000000, size=size_train, dtype=np.int64)
-            val_samples_indices = np.random.randint(0, 100000000, size=size_val, dtype=np.int64)
+            train_sample_indices = np.random.randint(0, size_db, size=size_train, dtype=np.int64)
+            val_samples_indices = np.random.randint(0, size_db, size=size_val, dtype=np.int64)
 
             # 对随机索引进行排序，实现顺序读取
             train_sample_indices.sort()
-            val_samples_indices.sort()
 
             # 保存排序后的索引
             train_sample_indices.tofile(train_indices_path)
@@ -336,6 +170,22 @@ def sample(conf: Configuration, path_db, train_indices_path, val_indices_path, d
         # 过滤包含NaN的序列
         if not np.isnan(np.sum(sequence)):
             loaded.append(sequence)
+        # test
+        # Sample variance sum: 0.935907053106348
+        # Sample variance sum: 2.4709072067166744
+        # Sample variance sum: 2.6744018443860114
+        # Sample variance sum: 2.690337936161086
+        # Sample variance sum: 2.7020822529448196
+        # Sample variance sum: 3.0320756442379206
+        # Sample variance sum: 3.0964675357099622
+        # Sample variance sum: 3.1288094581104815
+        # Sample variance sum: 3.1722038709558547
+        # Sample variance sum: 3.1789727727882564
+        # Sample variance sum: 3.2159773875027895
+        # Sample variance sum: 3.2248020899132825
+        # Sample variance sum: 3.2365694595500827
+        # calculate_segment_variance_sums(loaded, segments=16)
+        # import pdb; pdb.set_trace()
 
     # 保存并转换为PyTorch张量
     train_samples = np.asarray(loaded, dtype=np.float32)

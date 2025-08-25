@@ -160,9 +160,8 @@ class Experiment:
         self.val_query_loader1 = []
         self.val_query_loader2 = []
         for config in DATASET_CONFIGS:
-            size_train = int(config.size_train / num_data_base)
+            size_train = int(config.size_train / num_data_base)*10
             size_val = int(config.size_val / num_data_base)
-            import pdb; pdb.set_trace()
 
             train_samples, val_samples = getSamples(self.__conf, config.path_db,
                                                     f"conf/samples/{config.name}_train_indices.bin",
