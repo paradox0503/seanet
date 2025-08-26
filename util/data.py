@@ -170,22 +170,6 @@ def sample(conf: Configuration, path_db, train_indices_path, val_indices_path, d
         # 过滤包含NaN的序列
         if not np.isnan(np.sum(sequence)):
             loaded.append(sequence)
-        # test
-        # Sample variance sum: 0.935907053106348
-        # Sample variance sum: 2.4709072067166744
-        # Sample variance sum: 2.6744018443860114
-        # Sample variance sum: 2.690337936161086
-        # Sample variance sum: 2.7020822529448196
-        # Sample variance sum: 3.0320756442379206
-        # Sample variance sum: 3.0964675357099622
-        # Sample variance sum: 3.1288094581104815
-        # Sample variance sum: 3.1722038709558547
-        # Sample variance sum: 3.1789727727882564
-        # Sample variance sum: 3.2159773875027895
-        # Sample variance sum: 3.2248020899132825
-        # Sample variance sum: 3.2365694595500827
-        # calculate_segment_variance_sums(loaded, segments=16)
-        # import pdb; pdb.set_trace()
 
     # 保存并转换为PyTorch张量
     train_samples = np.asarray(loaded, dtype=np.float32)

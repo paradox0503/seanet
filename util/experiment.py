@@ -44,21 +44,21 @@ class EmbedConfig:
 
 DATASET_CONFIGS = [
     DatasetConfig("Astro00", "/data/user_jialinhan/process_data_get_record/build/data/astro-dataset.bin", 256, 200000, 10000, 100000000),
-    # DatasetConfig("Deep1B", "/data/user_jialinhan/process_data_get_record/build/data/deep1b-dataset.bin", 96, 200000, 10000, 100000000),
-    # DatasetConfig("F5", "/data/user_jialinhan/process_data_get_record/build/data/F5-dataset.bin", 256, 200000, 10000, 100000000),
-    # DatasetConfig("F10", "/data/user_jialinhan/process_data_get_record/build/data/F10-dataset.bin", 256, 200000, 10000, 100000000),
-    # DatasetConfig("origin", "/data/user_jialinhan/process_data_get_record/build/data/origin-dataset.bin", 256, 200000, 10000, 100000000),
-    # # DatasetConfig("sald", "/data/user_jialinhan/process_data_get_record/build/data/sald-dataset.bin", 128, 200000, 10000, 100000000),
-    # DatasetConfig("seismic", "/data/user_jialinhan/process_data_get_record/build/data/seismic-dataset.bin", 256, 200000, 10000, 100000000)
+    DatasetConfig("Deep1B", "/data/user_jialinhan/process_data_get_record/build/data/deep1b-dataset.bin", 96, 200000, 10000, 100000000),
+    DatasetConfig("F5", "/data/user_jialinhan/process_data_get_record/build/data/F5-dataset.bin", 256, 200000, 10000, 100000000),
+    DatasetConfig("F10", "/data/user_jialinhan/process_data_get_record/build/data/F10-dataset.bin", 256, 200000, 10000, 100000000),
+    DatasetConfig("origin", "/data/user_jialinhan/process_data_get_record/build/data/origin-dataset.bin", 256, 200000, 10000, 100000000),
+    DatasetConfig("sald", "/data/user_jialinhan/process_data_get_record/build/data/sald-dataset.bin", 128, 200000, 10000, 100000000),
+    DatasetConfig("seismic", "/data/user_jialinhan/process_data_get_record/build/data/seismic-dataset.bin", 256, 200000, 10000, 100000000)
 ]
 embed_CONFIGS = [    #   database path                                               query path
     EmbedConfig("astro", "process_data_get_record/build/data/astro-dataset.bin",    "process_data_get_record/build/data/astro-query.bin",256,100),
-    # EmbedConfig("deep1b", "process_data_get_record/build/data/deep1b-dataset.bin",    "process_data_get_record/build/data/deep1b-query.bin",96,1000),
-    # EmbedConfig("F5", "process_data_get_record/build/data/F5-dataset.bin",    "process_data_get_record/build/data/F5-query.bin",256,1000),
-    # EmbedConfig("F10", "process_data_get_record/build/data/F10-dataset.bin",    "process_data_get_record/build/data/F10-query.bin",256,1000),
-    # EmbedConfig("origin", "process_data_get_record/build/data/origin-dataset.bin",    "process_data_get_record/build/data/origin-query.bin",256,1000),
-    # # EmbedConfig("sald", "process_data_get_record/build/data/sald-dataset.bin",    "process_data_get_record/build/data/sald-query.bin",128,1000),
-    # EmbedConfig("seismic", "process_data_get_record/build/data/seismic-dataset.bin",    "process_data_get_record/build/data/seismic-query.bin",256,1000),
+    EmbedConfig("deep1b", "process_data_get_record/build/data/deep1b-dataset.bin",    "process_data_get_record/build/data/deep1b-query.bin",96,1000),
+    EmbedConfig("F5", "process_data_get_record/build/data/F5-dataset.bin",    "process_data_get_record/build/data/F5-query.bin",256,1000),
+    EmbedConfig("F10", "process_data_get_record/build/data/F10-dataset.bin",    "process_data_get_record/build/data/F10-query.bin",256,1000),
+    EmbedConfig("origin", "process_data_get_record/build/data/origin-dataset.bin",    "process_data_get_record/build/data/origin-query.bin",256,1000),
+    EmbedConfig("sald", "process_data_get_record/build/data/sald-dataset.bin",    "process_data_get_record/build/data/sald-query.bin",128,1000),
+    EmbedConfig("seismic", "process_data_get_record/build/data/seismic-dataset.bin",    "process_data_get_record/build/data/seismic-query.bin",256,1000),
     ]
 
 class Experiment:
@@ -148,7 +148,7 @@ class Experiment:
 
         batch_size = self.__conf.getHP('size_batch')
         num_data_base = len(DATASET_CONFIGS)
-
+        self.train_total_loader = []
         self.train_db_loader = []
         self.train_query_loader1 = []
         self.train_query_loader2 = []
@@ -160,7 +160,7 @@ class Experiment:
         self.val_query_loader1 = []
         self.val_query_loader2 = []
         for config in DATASET_CONFIGS:
-            size_train = int(config.size_train / num_data_base)*10
+            size_train = int(config.size_train / num_data_base*10)
             size_val = int(config.size_val / num_data_base)
 
             train_samples, val_samples = getSamples(self.__conf, config.path_db,
@@ -169,9 +169,12 @@ class Experiment:
                                                     config.dim_seq, size_train, size_val, config.size_db,
                                                     f"conf/samples/{config.name}_train_samples.bin",
                                                     f"conf/samples/{config.name}_val_samples.bin")
-            self.train_db_loader.extend(DataLoader(TSDataset(train_samples), batch_size=batch_size, shuffle=True))
-            self.train_query_loader1.extend(DataLoader(TSDataset(train_samples), batch_size=batch_size, shuffle=True))
-            self.train_query_loader2.extend(DataLoader(TSDataset(train_samples), batch_size=batch_size, shuffle=True))
+            self.train_total_loader.extend(DataLoader(TSDataset(train_samples), batch_size=batch_size, shuffle=False))
+
+            # self.train_db_loader.extend(DataLoader(TSDataset(train_samples), batch_size=batch_size, shuffle=False))
+            # self.train_query_loader1.extend(DataLoader(TSDataset(train_samples), batch_size=batch_size, shuffle=False))
+            # self.train_query_loader2.extend(DataLoader(TSDataset(train_samples), batch_size=batch_size, shuffle=False))
+            # import pdb; pdb.set_trace()
             self.val_db_loader.extend(DataLoader(TSDataset(val_samples), batch_size=batch_size, shuffle=True))
             self.val_query_loader1.extend(DataLoader(TSDataset(val_samples), batch_size=batch_size, shuffle=True))
             self.val_query_loader2.extend(DataLoader(TSDataset(val_samples), batch_size=batch_size, shuffle=True))
@@ -233,6 +236,64 @@ class Experiment:
             torch.cuda.empty_cache()
 
 
+    import numpy as np
+
+    def calculate_sample_variance(self, sample,  segments=16):
+        dim_series=len(sample)
+        # import pdb; pdb.set_trace()
+        """计算单个样本的16段方差和（与之前逻辑一致）"""
+        segment_length = dim_series // segments
+        # if len(sample) != dim_series:
+        #     raise ValueError(f"样本维度应为{dim_series}，实际为{len(sample)}")
+
+        total_variance = 0.0
+        for i in range(segments):
+            start = i * segment_length
+            end = start + segment_length
+            segment = sample[start:end]
+
+            # 计算分段平均值
+            segment_sum = np.sum(segment) if isinstance(segment, np.ndarray) else torch.sum(segment).item()
+            mean = segment_sum / segment_length
+
+            # 计算平方差之和
+            if isinstance(segment, np.ndarray):
+                squared_diff_sum = np.sum((segment - mean) **2)
+            else:  # 处理torch张量
+                squared_diff_sum = torch.sum((segment - mean)** 2).item()
+
+            # 累加方差
+            variance = squared_diff_sum / segment_length
+            total_variance += variance
+
+        return total_variance
+
+
+    def shuffle_batch_inter(self,batch_list):
+        """
+        打乱每个batch内部的数据顺序，但保持batch之间的顺序不变
+
+        参数:
+            batch_list: 包含多个batch的列表，每个batch是一个张量或数组
+        返回:
+            处理后的batch列表，每个batch内部已打乱
+        """
+        shuffled_batches = []
+        for batch in batch_list:
+            # 生成随机索引来打乱当前batch
+            if isinstance(batch, torch.Tensor):
+                # 处理PyTorch张量
+                shuffle_indices = torch.randperm(batch.size(0))
+                shuffled_batch = batch[shuffle_indices]
+            else:
+                # 处理其他类型（如numpy数组）
+                shuffle_indices = random.sample(range(len(batch)), len(batch))
+                shuffled_batch = batch[shuffle_indices]
+
+            shuffled_batches.append(shuffled_batch)
+
+        return shuffled_batches
+
     def run(self) -> None:
         if not self.has_setup:
             self.setup()
@@ -243,16 +304,87 @@ class Experiment:
 
         if mode=="pretrain":
             print("pretrain")
+            batch_metrics = []
+            for idx,batch  in enumerate(self.train_total_loader):
+                #     batch[0],batch[-1]排序
+                first_sample = batch[0].cpu().numpy() if isinstance(batch[0], torch.Tensor) else batch[0]
+                last_sample = batch[-1].cpu().numpy() if isinstance(batch[-1], torch.Tensor) else batch[-1]
+
+                # 计算两个样本的方差和
+                var_first = self.calculate_sample_variance(first_sample[0])
+                var_last = self.calculate_sample_variance(last_sample[0])
+
+                # 计算方差平均值
+                var_mean = (var_first + var_last) / 2
+
+                # 存储（方差平均值，原索引）
+                batch_metrics.append((var_mean, idx))
+            # 按照方差平均值从小到大排序
+            batch_metrics.sort(key=lambda x: x[0])
+
+            # 提取排序后的索引
+            total_indices = [idx for (_, idx) in batch_metrics]
+            total_num_batches = len(total_indices)
+            batch_size_per_round = max(1, int(total_num_batches / 10))
+            print(f"每轮选取的批次数量: {batch_size_per_round}")
+
             while self.epoch < self.max_epoch:
-                batches = [batch for batch in self.train_db_loader]
-                indices = torch.randperm(len(batches))  # 随机打乱批次的索引
-                self.train_db_loader = [batches[i] for i in indices]  # 根据打乱后的索引重新排列批次
+                batches = [batch for batch in self.train_total_loader]
 
-                batches = [batch for batch in self.train_query_loader1]
-                self.train_query_loader1 = [batches[i] for i in indices]  # 根据打乱后的索引重新排列批次
 
-                batches = [batch for batch in self.train_query_loader2]
-                self.train_query_loader2 = [batches[i] for i in indices]  # 根据打乱后的索引重新排列批次
+                if self.epoch < 80:
+                    # 前80轮：分8个区间的课程学习策略
+                    if total_num_batches <= batch_size_per_round:
+                        # 如果总批次小于每轮选取数量，直接使用全部
+                        selected_indices = total_indices
+                    else:
+                        # 将total_indices分为8个区间
+                        interval_size = total_num_batches // 8
+                        # 计算当前处于第几个区间（0-7）
+                        # 每10轮一个区间：0-9轮→0，10-19轮→1，…，70-79轮→7
+                        interval_idx = self.epoch // 10
+                        # 确保区间索引不超过7
+                        interval_idx = min(interval_idx, 7)
+
+                        # 计算当前区间的起始和结束索引
+                        start = interval_idx * interval_size
+                        # 最后一个区间可能需要延伸到末尾，确保覆盖所有数据
+                        end = (interval_idx + 1) * interval_size if interval_idx < 7 else total_num_batches
+
+                        # 从当前区间中随机选择batch_size_per_round个indices
+                        # 生成区间内的随机索引
+                        if end - start <= batch_size_per_round:
+                            # 如果区间大小小于所需数量，取全部
+                            interval_indices = total_indices[start:end]
+                        else:
+                            # 随机选择指定数量的indices
+                            random_pos = torch.randperm(end - start)[:batch_size_per_round]
+                            interval_indices = [total_indices[start + i] for i in random_pos]
+
+                        selected_indices = interval_indices
+                else:
+                    # 80轮以后：在整个total_indices中随机选取
+                    if total_num_batches <= batch_size_per_round:
+                        selected_indices = total_indices
+                    else:
+                        random_indices = torch.randperm(total_num_batches)[:batch_size_per_round]
+                        selected_indices = [total_indices[i] for i in random_indices]
+
+
+
+
+                self.train_db_loader = [batches[i] for i in selected_indices]  # 根据打乱后的索引重新排列批次
+                self.train_db_loader = self.shuffle_batch_inter(self.train_db_loader)
+                # import pdb; pdb.set_trace()
+                # batch内部打乱
+
+                # batches = [batch for batch in self.train_query_loader1]
+                self.train_query_loader1 = [batches[i] for i in selected_indices]  # 根据打乱后的索引重新排列批次
+                self.train_query_loader1 = self.shuffle_batch_inter(self.train_query_loader1)
+
+                # batches = [batch for batch in self.train_query_loader2]
+                self.train_query_loader2 = [batches[i] for i in selected_indices]  # 根据打乱后的索引重新排列批次
+                self.train_query_loader1 = self.shuffle_batch_inter(self.train_query_loader2)
 
 
                 batches = [batch for batch in self.val_db_loader]
