@@ -52,13 +52,13 @@ DATASET_CONFIGS = [
     DatasetConfig("seismic", "/data/user_jialinhan/process_data_get_record/build/data/seismic-dataset.bin", 256, 200000, 10000, 100000000)
 ]
 embed_CONFIGS = [    #   database path                                               query path
-    EmbedConfig("astro", "process_data_get_record/build/data/astro-dataset.bin",    "process_data_get_record/build/data/astro-query.bin",256,100),
-    EmbedConfig("deep1b", "process_data_get_record/build/data/deep1b-dataset.bin",    "process_data_get_record/build/data/deep1b-query.bin",96,1000),
-    EmbedConfig("F5", "process_data_get_record/build/data/F5-dataset.bin",    "process_data_get_record/build/data/F5-query.bin",256,1000),
-    EmbedConfig("F10", "process_data_get_record/build/data/F10-dataset.bin",    "process_data_get_record/build/data/F10-query.bin",256,1000),
-    EmbedConfig("origin", "process_data_get_record/build/data/origin-dataset.bin",    "process_data_get_record/build/data/origin-query.bin",256,1000),
-    EmbedConfig("sald", "process_data_get_record/build/data/sald-dataset.bin",    "process_data_get_record/build/data/sald-query.bin",128,1000),
-    EmbedConfig("seismic", "process_data_get_record/build/data/seismic-dataset.bin",    "process_data_get_record/build/data/seismic-query.bin",256,1000),
+    EmbedConfig("astro", "data_big/astro-dataset.bin",    "data_big/astro-query.bin",256,100),
+    EmbedConfig("deep1b", "data_big/deep1b-dataset.bin",    "data_big/deep1b-query.bin",96,1000),
+    EmbedConfig("F5", "data_big/F5-dataset.bin",    "data_big/F5-query.bin",256,1000),
+    EmbedConfig("F10", "data_big/F10-dataset.bin",    "data_big/F10-query.bin",256,1000),
+    EmbedConfig("origin", "data_big/origin-dataset.bin",    "data_big/origin-query.bin",256,1000),
+    EmbedConfig("sald", "data_big/sald-dataset.bin",    "data_big/sald-query.bin",128,1000),
+    EmbedConfig("seismic", "data_big/seismic-dataset.bin",    "data_big/seismic-query.bin",256,1000),
     ]
 
 class Experiment:

@@ -1,4 +1,8 @@
 conf/samples
+pretrain
+fine
+pretrain-2
+fine-2
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
