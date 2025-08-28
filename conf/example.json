@@ -2,7 +2,7 @@
     "mode":"pretrain",
     "func_b":0.01,
     "pickle":"/data/user_jialinhan/0kechegnxuexi/Transnet-pretrain-seismic-copy/conf/our_pretrain.pkl",
-    "result_path":"/data/user_jialinhan/0kechegnxuexi/Transnet-pretrain-seismic-copy/conf/none-astro/",
+    "result_path":"/data/user_jialinhan/0kechegnxuexi/Transnet-pretrain-seismic-copy/conf/",
     "main_path":"/data/user_jialinhan/",
     "num_epoch": 100,
     "fine_epoch":10,
