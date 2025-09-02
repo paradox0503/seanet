@@ -1,5 +1,8 @@
 fine-1
 none-dataset
+conf/10.pickle
+conf/fine.pkl
+conf/samples/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
