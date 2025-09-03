@@ -25,7 +25,7 @@ Other fields could be left by default.
 Please refer to *util/conf.py* for all possible configurations.
 
 3. **Train SEAnet**
-conda activate jlhseanet
+conda activate jlh
 export CUDA_VISIBLE_DEVICES=4
 
 ```bash
@@ -40,7 +40,7 @@ The indexing and query answering of DEA is in https://github.com/qtwang/isax-mod
 
 ```latex
 @inproceedings{kdd21-Wang-SEAnet,
-  author    = {Wang, Qitong and 
+  author    = {Wang, Qitong and
                Palpanas, Themis},
   title     = {Deep Learning Embeddings for Data Series Similarity Search},
   booktitle = {{KDD} '21: The 27th {ACM} {SIGKDD} Conference on Knowledge Discovery

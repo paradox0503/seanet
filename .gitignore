@@ -3,6 +3,11 @@ pretrain
 fine
 pretrain-2
 fine-2
+sanyuanzu-fine
+sanyuanzu-pretrain
+固定func_a-fine
+conf/100.pickle
+conf/our_pretrain.pkl
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

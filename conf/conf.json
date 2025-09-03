@@ -192,7 +192,7 @@
         "record_folder": "conf",
         "relu_slope": 0.01,
         "resblock_pre_activation": true,
-        "result_path": "/data/user_jialinhan/0kechegnxuexi/Transnet-pretrain-seismic-copy/conf/none-astro/",
+        "result_path": "/data/user_jialinhan/0kechegnxuexi/Transnet-pretrain-seismic-copy/conf/",
         "reverse_de_dilation": false,
         "sampling_name": "uniform",
         "size_batch": 256,
