@@ -437,7 +437,7 @@ class Experiment:
                 self.epoch += 1
                 print("第",self.epoch,"周期ing")
                 # func_a = self.model._AEBuilder__encoder.fuc
-                func_a=0.95
+                func_a=1
 
                 self.__train(func_a)
                 self.__validate(func_a)

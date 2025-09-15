@@ -27,7 +27,7 @@ Please refer to *util/conf.py* for all possible configurations.
 3. **Train SEAnet**
 conda activate jlh
 export CUDA_VISIBLE_DEVICES=4
-
+conda activate /home/liangzhiyu/miniconda3/jlh
 ```bash
 python run.py -C conf/example.json
 ```
