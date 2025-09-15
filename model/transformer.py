@@ -154,6 +154,7 @@ class TEM(nn.Module):
         # self.encoder =  nn.TransformerEncoder(encoder_layers, num_encoder_layers).to("cuda")
         self.encoder =  TransformerEncoder(encoder_layers, num_encoder_layers).to("cuda")
         self.fuc = nn.Parameter(torch.tensor(0.948, dtype=torch.float32, requires_grad = False))
+        self.c = nn.Parameter(torch.tensor(1.0, dtype=torch.float32, requires_grad = False))
         # self.fuc = nn.Parameter(torch.tensor(0.948, dtype=torch.float32, requires_grad=False))
 
         n=dim_embedding*self.num_patch
@@ -198,7 +199,6 @@ class TEM(nn.Module):
                 nn.init.xavier_uniform_(p)
 
     def new_forward(self, x):
-        ox=x
         # x=self.begin_ns(x)
         # mean = x.mean(dim=-1, keepdim=True)
         # std = x.std(dim=-1, keepdim=True)
@@ -255,31 +255,11 @@ class TEM(nn.Module):
         # x = x.view(bs, 1, 16)
 
         x=self.norm(x)
-
-        # 生成分为16段的paa
-        # ox: [bs, n_vars, seq_len]
-        paa_segments = 16
-        paa = []
-        for i in range(paa_segments):
-            start = int(i * seq_len / paa_segments)
-            end = int((i + 1) * seq_len / paa_segments)
-            segment = ox[:, :, start:end]
-            paa.append(segment.mean(dim=2, keepdim=True))
-        paa = torch.cat(paa, dim=2)  # [bs, n_vars, 16]
-        # 如果x的shape为[bs, n_vars, dim_embedding]，则需调整paa形状
-        # 这里假设dim_embedding==16，否则需进一步处理
-        if paa.shape[2] == x.shape[2]:
-            x = x + paa
-        else:
-            # 如果x的最后一维不是16，则插值或扩展paa
-            paa_expanded = torch.nn.functional.interpolate(paa, size=x.shape[2], mode='linear', align_corners=False)
-            x = x + paa_expanded
         # print("n", end='')
         # x=torch.zeros_like(x)
         return [x,y]
 
     def forward(self, x: Tensor) -> Tensor:
-        ox=x
         _,_,seq_len = x.size()
         if seq_len==96:
             x=self.linear0_1(x)
@@ -334,24 +314,6 @@ class TEM(nn.Module):
 
         x=self.norm(x)
 
-        # 生成分为16段的paa
-        # ox: [bs, n_vars, seq_len]
-        paa_segments = 16
-        paa = []
-        for i in range(paa_segments):
-            start = int(i * seq_len / paa_segments)
-            end = int((i + 1) * seq_len / paa_segments)
-            segment = ox[:, :, start:end]
-            paa.append(segment.mean(dim=2, keepdim=True))
-        paa = torch.cat(paa, dim=2)  # [bs, n_vars, 16]
-        # 如果x的shape为[bs, n_vars, dim_embedding]，则需调整paa形状
-        # 这里假设dim_embedding==16，否则需进一步处理
-        if paa.shape[2] == x.shape[2]:
-            x = x + paa
-        else:
-            # 如果x的最后一维不是16，则插值或扩展paa
-            paa_expanded = torch.nn.functional.interpolate(paa, size=x.shape[2], mode='linear', align_corners=False)
-            x = x + paa_expanded
         # print('-------------------------------------------------------------------------------')
         # print(x.shape)     #torch.Size([2000, 1, 16])
         # exit()
@@ -360,7 +322,6 @@ class TEM(nn.Module):
         return [x,y]
 
     def old_forward(self, x: Tensor) -> Tensor:
-        ox=x
         # x=self.begin_ns(x)
         # mean = x.mean(dim=-1, keepdim=True)
         # std = x.std(dim=-1, keepdim=True)
@@ -401,25 +362,6 @@ class TEM(nn.Module):
         x = torch.reshape(x, (bs, n_vars, self.dim_embedding*num_patch))
         x = self.linear2(x)  # [bs, n_vars, num_patch * dim_embedding] -> [bs, n_vars, dim_embedding]
         x=self.norm(x)
-
-        # 生成分为16段的paa
-        # ox: [bs, n_vars, seq_len]
-        paa_segments = 16
-        paa = []
-        for i in range(paa_segments):
-            start = int(i * seq_len / paa_segments)
-            end = int((i + 1) * seq_len / paa_segments)
-            segment = ox[:, :, start:end]
-            paa.append(segment.mean(dim=2, keepdim=True))
-        paa = torch.cat(paa, dim=2)  # [bs, n_vars, 16]
-        # 如果x的shape为[bs, n_vars, dim_embedding]，则需调整paa形状
-        # 这里假设dim_embedding==16，否则需进一步处理
-        if paa.shape[2] == x.shape[2]:
-            x = x + paa
-        else:
-            # 如果x的最后一维不是16，则插值或扩展paa
-            paa_expanded = torch.nn.functional.interpolate(paa, size=x.shape[2], mode='linear', align_corners=False)
-            x = x + paa_expanded
         return [x,y]
 
 
