@@ -3,8 +3,8 @@ import torch
 from numpy import sqrt
 from torch import mean, squeeze
 from torch.nn import Module, PairwiseDistance
- 
-    
+
+
 def ED_2(tensor1, tensor2):
     tensor1 = squeeze(tensor1)
     tensor2 = squeeze(tensor2)
@@ -24,7 +24,7 @@ def ED_2(tensor1, tensor2):
 
     return squeeze(row_sum)
 
-    
+
 # TODO squeeze is not time-comusing. While it's still good to remove it
 class ScaledL2Trans(Module):
     def __init__(self, original_dimension:int = 256, embedding_dimension: int = 16, to_scale: bool = False):
@@ -41,13 +41,13 @@ class ScaledL2Trans(Module):
             self.__scale_factor_embedding = 1
 
     def forward(self,jlh_a, database, query1,query2, db_embedding, query_embedding1,query_embedding2):
-        
-        original_l2 = (self.__l2(squeeze(database), squeeze(query1))-self.__l2(squeeze(database), squeeze(query2)))/self.__scale_factor_original
-        embedding_l2 = (self.__l2(squeeze(db_embedding), squeeze(query_embedding1))-self.__l2(squeeze(db_embedding), squeeze(query_embedding2)))/self.__scale_factor_embedding*jlh_a
 
-        return self.__l1(original_l2.view([1, -1]), embedding_l2.view([1, -1]))[0] / database.shape[0] 
+        original_l2 = (self.__l2(squeeze(database), squeeze(query1))-self.__l2(squeeze(database), squeeze(query2)))/self.__scale_factor_original
+        embedding_l2 = (self.__l2(squeeze(db_embedding), squeeze(query_embedding1))-self.__l2(squeeze(db_embedding), squeeze(query_embedding2)))/self.__scale_factor_embedding*torch.sqrt(jlh_a)
+
+        return self.__l1(original_l2.view([1, -1]), embedding_l2.view([1, -1]))[0] / database.shape[0]
         # print(return_l2.shape)
-        
+
         # original_l2 = (ED_2(database, query1)-ED_2(database,query2))/(self.__scale_factor_original*self.__scale_factor_original)
         # embedding_l2 = (ED_2(db_embedding, query_embedding1)-ED_2(db_embedding, query_embedding2))/((self.__scale_factor_embedding*jlh_a)*(self.__scale_factor_embedding*jlh_a))
 
@@ -61,16 +61,16 @@ class ScaledL2Trans(Module):
         return self.__l1(sorted_original_indices.view([1, -1]), sorted_embedding_indices.view([1, -1]))[0] / database.shape[0]
         # difference = torch.abs(sorted_original_indices - sorted_embedding_indices).sum()
         # return difference / database.shape[0]
-       
+
         original_l2 = self.__l2(squeeze(database), squeeze(query)) / self.__scale_factor_original
-        embedding_l2 = self.__l2(squeeze(db_embedding), squeeze(query_embedding)) / self.__scale_factor_embedding 
+        embedding_l2 = self.__l2(squeeze(db_embedding), squeeze(query_embedding)) / self.__scale_factor_embedding
 
         return self.__l1(original_l2.view([1, -1]), embedding_l2.view([1, -1]))[0] / database.shape[0]
-      
-    '''
-        
 
-    
+    '''
+
+
+
 
 class ScaledL2Recons(Module):
     def __init__(self, original_dimension: int = 256, to_scale: bool = False):
@@ -86,7 +86,7 @@ class ScaledL2Recons(Module):
     def forward(self, database, reconstructed):
 
         # print("database.shape", database.shape)
-        
+
         # print("reconstructed.shape", reconstructed.shape)
         return mean(self.__l2(squeeze(database), squeeze(reconstructed))) / self.__scale_factor
 #self.__l2(squeeze(database), squeeze(reconstructed)) 返回了两个张量之间的 L2 距离，然后 mean 函数计算了这些距离的平均值。
@@ -115,4 +115,4 @@ ScaledL2Recons 模块用于计算数据库和重构数据之间的 L2 距离。�
 
 在 ScaledL2Recons 的构造函数中，同样使用了 PairwiseDistance 类来计算 L2 距离。根据需要，也会计算原始维度的缩放因子。
 
-在 forward 方法中，首先使用 squeeze 函数来压缩数据库和查询的张量维度。然后，计算原始数据和嵌入数据''' 
+在 forward 方法中，首先使用 squeeze 函数来压缩数据库和查询的张量维度。然后，计算原始数据和嵌入数据'''

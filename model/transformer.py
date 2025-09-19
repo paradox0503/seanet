@@ -154,7 +154,7 @@ class TEM(nn.Module):
         # self.encoder =  nn.TransformerEncoder(encoder_layers, num_encoder_layers).to("cuda")
         self.encoder =  TransformerEncoder(encoder_layers, num_encoder_layers).to("cuda")
         self.fuc = nn.Parameter(torch.tensor(0.948, dtype=torch.float32, requires_grad = False))
-        # self.fuc = nn.Parameter(torch.tensor(0.948, dtype=torch.float32, requires_grad=False))
+        self.fc = nn.Parameter(torch.tensor(0.999, dtype=torch.float32, requires_grad=False))
 
         n=dim_embedding*self.num_patch
         # n1=dim_embedding*self.num_patch1
@@ -268,12 +268,7 @@ class TEM(nn.Module):
         paa = torch.cat(paa, dim=2)  # [bs, n_vars, 16]
         # 如果x的shape为[bs, n_vars, dim_embedding]，则需调整paa形状
         # 这里假设dim_embedding==16，否则需进一步处理
-        if paa.shape[2] == x.shape[2]:
-            x = x + paa
-        else:
-            # 如果x的最后一维不是16，则插值或扩展paa
-            paa_expanded = torch.nn.functional.interpolate(paa, size=x.shape[2], mode='linear', align_corners=False)
-            x = x + paa_expanded
+        x = x + torch.sigmoid(self.fc) * (paa - x)
         # print("n", end='')
         # x=torch.zeros_like(x)
         return [x,y]
@@ -346,13 +341,8 @@ class TEM(nn.Module):
         paa = torch.cat(paa, dim=2)  # [bs, n_vars, 16]
         # 如果x的shape为[bs, n_vars, dim_embedding]，则需调整paa形状
         # 这里假设dim_embedding==16，否则需进一步处理
-        if paa.shape[2] == x.shape[2]:
-            x = x + paa
-        else:
-            # 如果x的最后一维不是16，则插值或扩展paa
-            paa_expanded = torch.nn.functional.interpolate(paa, size=x.shape[2], mode='linear', align_corners=False)
-            x = x + paa_expanded
-        # print('-------------------------------------------------------------------------------')
+        x = x + torch.sigmoid(self.fc) * (paa - x)
+                        # print('-------------------------------------------------------------------------------')
         # print(x.shape)     #torch.Size([2000, 1, 16])
         # exit()
 
@@ -414,12 +404,7 @@ class TEM(nn.Module):
         paa = torch.cat(paa, dim=2)  # [bs, n_vars, 16]
         # 如果x的shape为[bs, n_vars, dim_embedding]，则需调整paa形状
         # 这里假设dim_embedding==16，否则需进一步处理
-        if paa.shape[2] == x.shape[2]:
-            x = x + paa
-        else:
-            # 如果x的最后一维不是16，则插值或扩展paa
-            paa_expanded = torch.nn.functional.interpolate(paa, size=x.shape[2], mode='linear', align_corners=False)
-            x = x + paa_expanded
+        x = x + torch.sigmoid(self.fc) * (paa - x)
         return [x,y]
 
 

@@ -10,6 +10,7 @@ conf/100.pickle
 conf/our_pretrain.pkl
 guding-func_a-fine
 guding-func_a-pretrain
+norm_paa-fine
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
