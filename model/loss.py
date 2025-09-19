@@ -43,7 +43,7 @@ class ScaledL2Trans(Module):
     def forward(self,jlh_a, database, query1,query2, db_embedding, query_embedding1,query_embedding2):
 
         original_l2 = (self.__l2(squeeze(database), squeeze(query1))-self.__l2(squeeze(database), squeeze(query2)))/self.__scale_factor_original
-        embedding_l2 = (self.__l2(squeeze(db_embedding), squeeze(query_embedding1))-self.__l2(squeeze(db_embedding), squeeze(query_embedding2)))/self.__scale_factor_embedding
+        embedding_l2 = (self.__l2(squeeze(db_embedding), squeeze(query_embedding1))-self.__l2(squeeze(db_embedding), squeeze(query_embedding2)))/self.__scale_factor_embedding*torch.sqrt(jlh_a)
 
         return self.__l1(original_l2.view([1, -1]), embedding_l2.view([1, -1]))[0] / database.shape[0]
         # print(return_l2.shape)

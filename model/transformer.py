@@ -154,8 +154,8 @@ class TEM(nn.Module):
         # self.encoder =  nn.TransformerEncoder(encoder_layers, num_encoder_layers).to("cuda")
         self.encoder =  TransformerEncoder(encoder_layers, num_encoder_layers).to("cuda")
         self.fuc = nn.Parameter(torch.tensor(0.948, dtype=torch.float32, requires_grad = False))
-        self.c = nn.Parameter(torch.tensor(1.0, dtype=torch.float32, requires_grad = False))
-        # self.fuc = nn.Parameter(torch.tensor(0.948, dtype=torch.float32, requires_grad=False))
+        # self.c = nn.Parameter(torch.tensor(1.0, dtype=torch.float32, requires_grad = False))
+        self.fc = nn.Parameter(torch.tensor(0.999, dtype=torch.float32, requires_grad=False))
 
         n=dim_embedding*self.num_patch
         # n1=dim_embedding*self.num_patch1
@@ -255,6 +255,20 @@ class TEM(nn.Module):
         # x = x.view(bs, 1, 16)
 
         x=self.norm(x)
+
+        # 生成分为16段的paa
+        # ox: [bs, n_vars, seq_len]
+        paa_segments = 16
+        paa = []
+        for i in range(paa_segments):
+            start = int(i * seq_len / paa_segments)
+            end = int((i + 1) * seq_len / paa_segments)
+            segment = ox[:, :, start:end]
+            paa.append(segment.mean(dim=2, keepdim=True))
+        paa = torch.cat(paa, dim=2)  # [bs, n_vars, 16]
+        # 如果x的shape为[bs, n_vars, dim_embedding]，则需调整paa形状
+        # 这里假设dim_embedding==16，否则需进一步处理
+        x = x + torch.sigmoid(self.fc) * (paa - x)
         # print("n", end='')
         # x=torch.zeros_like(x)
         return [x,y]
@@ -314,7 +328,20 @@ class TEM(nn.Module):
 
         x=self.norm(x)
 
-        # print('-------------------------------------------------------------------------------')
+        # 生成分为16段的paa
+        # ox: [bs, n_vars, seq_len]
+        paa_segments = 16
+        paa = []
+        for i in range(paa_segments):
+            start = int(i * seq_len / paa_segments)
+            end = int((i + 1) * seq_len / paa_segments)
+            segment = ox[:, :, start:end]
+            paa.append(segment.mean(dim=2, keepdim=True))
+        paa = torch.cat(paa, dim=2)  # [bs, n_vars, 16]
+        # 如果x的shape为[bs, n_vars, dim_embedding]，则需调整paa形状
+        # 这里假设dim_embedding==16，否则需进一步处理
+        x = x + torch.sigmoid(self.fc) * (paa - x)
+                        # print('-------------------------------------------------------------------------------')
         # print(x.shape)     #torch.Size([2000, 1, 16])
         # exit()
 
@@ -362,6 +389,20 @@ class TEM(nn.Module):
         x = torch.reshape(x, (bs, n_vars, self.dim_embedding*num_patch))
         x = self.linear2(x)  # [bs, n_vars, num_patch * dim_embedding] -> [bs, n_vars, dim_embedding]
         x=self.norm(x)
+
+        # 生成分为16段的paa
+        # ox: [bs, n_vars, seq_len]
+        paa_segments = 16
+        paa = []
+        for i in range(paa_segments):
+            start = int(i * seq_len / paa_segments)
+            end = int((i + 1) * seq_len / paa_segments)
+            segment = ox[:, :, start:end]
+            paa.append(segment.mean(dim=2, keepdim=True))
+        paa = torch.cat(paa, dim=2)  # [bs, n_vars, 16]
+        # 如果x的shape为[bs, n_vars, dim_embedding]，则需调整paa形状
+        # 这里假设dim_embedding==16，否则需进一步处理
+        x = x + torch.sigmoid(self.fc) * (paa - x)
         return [x,y]
 
 

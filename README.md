@@ -25,6 +25,7 @@ Other fields could be left by default.
 Please refer to *util/conf.py* for all possible configurations.
 
 3. **Train SEAnet**
+nvidia-smi
 conda activate jlh
 export CUDA_VISIBLE_DEVICES=4
 conda activate /home/liangzhiyu/miniconda3/jlh

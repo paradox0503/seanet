@@ -436,8 +436,8 @@ class Experiment:
 
                 self.epoch += 1
                 print("第",self.epoch,"周期ing")
-                # func_a = self.model._AEBuilder__encoder.fuc
-                func_a=1
+                func_a = self.model._AEBuilder__encoder.fuc
+                # func_a=1
 
                 self.__train(func_a)
                 self.__validate(func_a)
@@ -656,6 +656,7 @@ class Experiment:
             self.logger.info('t{:d} recon_encoder = {:.4f}'.format(self.epoch, np.mean(return_l2s)))#转换误差
             self.logger.info('t{:d} fuca = {:.4f}'.format(self.epoch, self.model._AEBuilder__encoder.fuc.detach().item()))#转换误差
             self.logger.info('t{:d} fucb = {:.4f}'.format(self.epoch, self.model._AEBuilder__encoder.fucb.detach().item()))#转换误差
+            self.logger.info('t{:d} fucc = {:.4f}'.format(self.epoch, self.model._AEBuilder__encoder.fc.detach().item()))#转换误差
             self.logger.info('t{:d} loss = {:.4f}'.format(self.epoch, np.mean(losses)))#转换误差
             # self.logger.info('t{:d} func_a = {:.4f}'.format(self.epoch, func_a))
 
