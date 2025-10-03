@@ -11,6 +11,8 @@ conf/our_pretrain.pkl
 guding-func_a-fine
 guding-func_a-pretrain
 norm_paa-fine
+func_a=1_fine
+embed-output
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
