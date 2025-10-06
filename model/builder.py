@@ -8,6 +8,7 @@ from model.DenseAE import DenseEncoder, DenseDecoder
 from model.RNNAE import RNNEncoder, RNNDecoder
 from model.FDJAE import FDJEncoder, FDJDecoder
 from model.InceptionAE import InceptionEncoder, InceptionDecoder
+from model.timesnet import TimesNetEncoder, TimesNetDecoder
 
 
 class AEBuilder(nn.Module):
@@ -26,6 +27,8 @@ class AEBuilder(nn.Module):
             self.__encoder = InceptionEncoder(conf)
         elif encoder_name == 'gru' or encoder_name == 'lstm':
             self.__encoder = RNNEncoder(conf)
+        elif encoder_name == 'timesnet':
+            self.__encoder = TimesNetEncoder(conf)
         else:
             raise ValueError('encoder {:s} isn\'t supported yet'.format(encoder_name))
 
@@ -43,6 +46,8 @@ class AEBuilder(nn.Module):
             self.__decoder = InceptionDecoder(conf)
         elif decoder_name == 'gru' or decoder_name == 'lstm':
             self.__decoder = RNNDecoder(conf)
+        elif decoder_name == 'timesnet':
+            self.__decoder = TimesNetDecoder(conf)
         elif decoder_name == 'none':
             self.__decoder =  None
         else:
@@ -51,16 +56,16 @@ class AEBuilder(nn.Module):
 
     def encode(self, input: Tensor) -> Tensor:
         return self.__encoder(input)
-    
+
 
     def decode(self, input: Tensor) -> Tensor:
         if self.__decoder is None:
             raise ValueError('No decoder')
 
         return self.__decoder(input)
-    
 
-    # explicit model.encode/decode is preferred as decoder might not exist 
+
+    # explicit model.encode/decode is preferred as decoder might not exist
     # forward is mostly for examining no. parameters
     def forward(self, input: Tensor) -> Tensor:
         embedding = self.encode(input)
@@ -69,4 +74,3 @@ class AEBuilder(nn.Module):
             return embedding
 
         return self.decode(embedding)
-        
