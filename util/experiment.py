@@ -45,13 +45,13 @@ class EmbedConfig:
         self.size_query = size_query
 
 DATASET_CONFIGS = [
-    DatasetConfig("Astro00", "/data/user_jialinhan/process_data_get_record/build/data/astro-dataset.bin", 256, 200000, 10000, 100000000,0),
-    DatasetConfig("Deep1B", "/data/user_jialinhan/process_data_get_record/build/data/deep1b-dataset.bin", 96, 200000, 10000, 100000000,1),
-    DatasetConfig("F5", "/data/user_jialinhan/process_data_get_record/build/data/F5-dataset.bin", 256, 200000, 10000, 100000000,2),
-    DatasetConfig("F10", "/data/user_jialinhan/process_data_get_record/build/data/F10-dataset.bin", 256, 200000, 10000, 100000000,3),
-    DatasetConfig("origin", "/data/user_jialinhan/process_data_get_record/build/data/origin-dataset.bin", 256, 200000, 10000, 100000000,4),
-    DatasetConfig("sald", "/data/user_jialinhan/process_data_get_record/build/data/sald-dataset.bin", 128, 200000, 10000, 100000000,5),
-    DatasetConfig("seismic", "/data/user_jialinhan/process_data_get_record/build/data/seismic-dataset.bin", 256, 200000, 10000, 100000000,6)
+    DatasetConfig("Astro00", "/data/user_jialinhan/process_data_get_record/build/data/astro-dataset.bin", 256, 20000, 10000, 100000000,0),
+    DatasetConfig("Deep1B", "/data/user_jialinhan/process_data_get_record/build/data/deep1b-dataset.bin", 96, 20000, 10000, 100000000,1),
+    DatasetConfig("F5", "/data/user_jialinhan/process_data_get_record/build/data/F5-dataset.bin", 256, 20000, 10000, 100000000,2),
+    DatasetConfig("F10", "/data/user_jialinhan/process_data_get_record/build/data/F10-dataset.bin", 256, 20000, 10000, 100000000,3),
+    DatasetConfig("origin", "/data/user_jialinhan/process_data_get_record/build/data/origin-dataset.bin", 256, 20000, 10000, 100000000,4),
+    DatasetConfig("sald", "/data/user_jialinhan/process_data_get_record/build/data/sald-dataset.bin", 128, 20000, 10000, 100000000,5),
+    DatasetConfig("seismic", "/data/user_jialinhan/process_data_get_record/build/data/seismic-dataset.bin", 256, 20000, 10000, 100000000,6)
 ]
 embed_CONFIGS = [    #   database path                                               query path
     EmbedConfig("astro", "data_big/astro-dataset.bin",    "data_big/astro-query.bin",256,100),
@@ -165,8 +165,10 @@ class Experiment:
         len1=0
         lent=0
         for config in DATASET_CONFIGS:
-            size_train = int(config.size_train / num_data_base*10)
-            size_val = int(config.size_val / num_data_base)
+            # size_train = int(config.size_train / num_data_base*10)
+            # size_val = int(config.size_val / num_data_base)
+            size_train = int(config.size_train * num_data_base)
+            size_val = int(config.size_val * num_data_base)
 
             train_samples, val_samples = getSamples(self.__conf, config.path_db,
                                                     f"conf/samples/{config.name}_train_indices.bin",
@@ -436,8 +438,8 @@ class Experiment:
 
                 self.epoch += 1
                 print("第",self.epoch,"周期ing")
-                func_a = self.model._AEBuilder__encoder.fuc
-                # func_a=1
+                # func_a = self.model._AEBuilder__encoder.fuc
+                func_a=1
 
                 self.__train(func_a)
                 self.__validate(func_a)
@@ -618,7 +620,7 @@ class Experiment:
 
                     return_l2=mean(self.__l2(squeeze(db_orig), squeeze(db_batch)))*self.__conf.getHP("func_b")
                 else:
-                    return_l2=0
+                    return_l2=torch.zeros(1).to(self.device)
                     # ,db_orig,self.model._AEBuilder__encoder.fucb,self.__conf.getHP('mode')
                 # trans_error = self.trans_loss(func_a,db_batch, query_batch1, db_embedding, query_embedding1)
                 print(trans_error)
@@ -693,10 +695,10 @@ class Experiment:
                 jlh_orth_term = self.__orth_reg()
                 jlh_regularization = jlh_recons_term + jlh_orth_term
                 if self.__conf.getHP("mode")=="pretrain":
-                    return_l2=mean(self.__l2(squeeze(db_orig), squeeze(db_batch)))*(0.0001+abs(self.model._AEBuilder__encoder.fucb))
+                    return_l2=mean(self.__l2(squeeze(db_orig), squeeze(db_batch)))*self.__conf.getHP("func_b")
                     # print("encoder_recon",return_l2)
                 else:
-                    return_l2=0
+                    return_l2=torch.zeros(1).to(self.device)
                 trans_error = self.trans_loss(func_a,db_batch, query_batch1,query_batch2, db_embedding, query_embedding1, query_embedding2)#转换误差
                 # trans_error = self.trans_loss(func_a,db_batch, query_batch1, db_embedding, query_embedding1)
                 loss=jlh_regularization+trans_error+return_l2 #jiade

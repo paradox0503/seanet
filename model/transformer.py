@@ -529,4 +529,3 @@ class TransformerDecoderLayer(nn.Module):
         tgt = self.norm3(tgt)
         return tgt
 
-
