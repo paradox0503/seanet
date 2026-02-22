@@ -62,13 +62,13 @@ class Configuration:
             'relu_slope': 1e-2,
             'optim_type': 'sgd',
             'momentum': 0.9,
-            'lr_mode': 'linear', 
+            'lr_mode': 'linear',
             'lr_cons': 1e-3,
             'lr_max': 1e-3,
             'lr_min': 1e-5,
             'lr_everyk': 2,
             'lr_ebase': 0.9,
-            'wd_mode': 'fix', 
+            'wd_mode': 'fix',
             'wd_cons': 1e-4,
             'wd_max': 1e-4,
             'wd_min': 1e-8,
@@ -145,8 +145,8 @@ class Configuration:
 
         self.legals = {
             'device': {'cpu', 'cuda'},
-            'encoder': {'residual', 'dense', 'gru', 'lstm', 'fdj', 'inception','transformer'},
-            'decoder': {'residual', 'dense', 'singleresidual', 'none', 'gru', 'lstm', 'fdj', 'inception','transformer'},
+            'encoder': {'residual', 'dense', 'gru', 'lstm', 'fdj', 'inception','transformer','timesnet'},
+            'decoder': {'residual', 'dense', 'singleresidual', 'none', 'gru', 'lstm', 'fdj', 'inception','transformer','timesnet'},
             'activation_conv': {'relu', 'leakyrelu', 'tanh', 'lecuntanh'},
             'activation_linear': {'relu', 'leakyrelu', 'tanh', 'lecuntanh'},
             'layernorm_type': {'layernorm', 'adanorm', 'none'},
@@ -176,7 +176,7 @@ class Configuration:
                 path = os.path.join(path, self.getHP('default_conf_filename'))'''
 
             self.loadConf(path, existing)
-        
+
         # if dump and not existing:
         if dump:
             self.dumpConf()
@@ -186,11 +186,11 @@ class Configuration:
         if name in self.settings:
             #print('getHP print 成功')
             return self.settings[name]
-        
+
         if name in self.defaults:
             #print('getHP print 成功')
             return self.defaults[name]
-        
+
         raise ValueError('hyperparmeter {} doesn\'t exist'.format(name))
 
 
@@ -205,13 +205,13 @@ class Configuration:
 
         assert self.getHP('lr_mode') != 'exponentially' or (0 < self.getHP('lr_ebase') < 1)
         assert (self.getHP('encoder') == 'gru' or self.getHP('encoder') == 'lstm') == (self.getHP('decoder') == 'gru' or self.getHP('decoder') == 'lstm')
-        
+
         if self.getHP('encoder') == 'fdj':
             assert self.getHP('decoder') == 'fdj' or self.getHP('decoder') == 'none'
             assert self.getHP('resblock_pre_activation') == False
         elif self.getHP('decoder') == 'fdj':
             raise ValueError('decoder {:s} shoud have encoder {:s}, while got {:s}'.format(self.getHP('decoder'), 'fdj', self.getHP('encoder')))
-        
+
         if self.getHP('encoder') == 'inception' or self.getHP('decoder') == 'inception':
             inception_kernel_sizes = self.getHP('inception_kernel_sizes')
             assert type(inception_kernel_sizes) == list and len(inception_kernel_sizes) != 0 and 1 in inception_kernel_sizes
@@ -221,7 +221,7 @@ class Configuration:
     def __setup(self, existing: bool = False) -> None:
         if existing:
             result_root = str(Path(self.getHP('conf_path')).parent)#"conf_path": "conf/example.json",也就是conf文件夹
-        else:         
+        else:
             result_root = os.path.join(os.getcwd(), self.getHP('name'))
             os.makedirs(result_root, exist_ok=True)
 
@@ -232,19 +232,19 @@ class Configuration:
 
             if log_folder == 'default':
                 log_folder = result_root
-                
+
             log_filename = self.getHP('log_filename')
-            
+
             if log_filename == 'default':
                 log_filename = 'fit.log'
-    
+
             log_filepath = os.path.join(log_folder, log_filename)
-            
+
             self.setHP('log_filepath', log_filepath)
 
         if self.getHP('record_folder') == 'default':
             self.setHP('record_folder', result_root)
-    
+
         if self.getHP('checkpoint_folder') == 'default':
             self.setHP('checkpoint_folder', result_root)
 
@@ -264,7 +264,7 @@ class Configuration:
 
                 local_defaults = self.defaults
                 self.defaults = loaded['defaults']
-                
+
                 for name, value in local_defaults.items():
                     if name not in self.defaults:
                         self.defaults[name] = value
@@ -312,10 +312,10 @@ class Configuration:
                 return nn.LayerNorm(shape, elementwise_affine=self.getHP('layernorm_elementwise_affine'))
             elif layernorm_type == 'adanorm':
                 return AdaNorm(shape, self.getHP('adanorm_k'), self.getHP('adanorm_scale'), self.getHP('eps'), self.getHP('layernorm_elementwise_affine'))
-        
+
         return nn.Identity()
 
-    
+
     # depth starts from 1
     def getDilatoin(self, depth: int, to_encode: bool = True) -> int:
         dilation_type = self.getHP('dilation_type')#首先，获取神经网络的膨胀类型（dilation_type）
@@ -334,6 +334,6 @@ class Configuration:
             return int(2 ** (depth - 1))
         elif dilation_type == 'linear':
             return self.getHP('dilation_base') + self.getHP('dilation_slope') * (depth - 1)
-        
+
         return self.getHP('dilation_constant')
-    
+

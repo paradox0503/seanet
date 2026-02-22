@@ -2,7 +2,7 @@
     "mode":"fine",
     "pkl_file":"/data/user_jialinhan/0kechegnxuexi/Transnet-pretrain-cl/conf/our_pretrain.pkl",
     "dim_series": 256,
-    "result_path":"/data/user_jialinhan/0kechegnxuexi/Transnet-pretrain-cl/sanyuanzu-fine/",
+    "result_path":"/data/user_jialinhan/0kechegnxuexi/Transnet-pretrain-cl/embed-output/140wpretrain-2wfine/",
     "decoder": "transformer",
 
     "fine_epoch": 10,

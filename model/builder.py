@@ -12,6 +12,7 @@ from model.FDJAE import FDJEncoder, FDJDecoder
 from model.InceptionAE import InceptionEncoder, InceptionDecoder
 from model.transformer import TEM
 from model.transformer import TransformerDecoderModel as TDM
+from model.timesnet import TimesNetEncoder, TimesNetDecoder
 
 
 # from model.LocationPointPreprocess import LPT as TEM
@@ -34,6 +35,8 @@ class AEBuilder(nn.Module):
             self.__encoder = RNNEncoder(conf)
         elif encoder_name == 'transformer':
             self.__encoder = TEM(conf)
+        elif encoder_name == 'timesnet':
+            self.__encoder = TimesNetEncoder(conf)
         else:
             raise ValueError('encoder {:s} isn\'t supported yet'.format(encoder_name))
 
@@ -55,22 +58,24 @@ class AEBuilder(nn.Module):
             self.__decoder = TDM(conf)
         elif decoder_name == 'none':
             self.__decoder =  None
+        elif decoder_name == 'timesnet':
+            self.__decoder = TimesNetDecoder(conf)
         else:
             raise ValueError('decoder {:s} isn\'t supported yet'.format(decoder_name))
 
 
     def encode(self, input: Tensor) -> Tensor:
         return self.__encoder(input)
-    
+
 
     def decode(self, input: Tensor) -> Tensor:
         if self.__decoder is None:
             raise ValueError('No decoder')
 
         return self.__decoder(input)
-    
 
-    # explicit model.encode/decode is preferred as decoder might not exist 
+
+    # explicit model.encode/decode is preferred as decoder might not exist
     # forward is mostly for examining no. parameters
     def forward(self, input: Tensor) -> Tensor:
         embedding = self.encode(input)
@@ -79,4 +84,3 @@ class AEBuilder(nn.Module):
             return embedding
 
         return self.decode(embedding)
-        
