@@ -99,7 +99,7 @@ def orthogonal_weights_init(m):
         else:
             #nn.init.orthogonal(m.weight)
             w_ortho = svd_orthonormal(m.weight.data.cpu().numpy())
-            #print w_ortho 
+            #print w_ortho
             #m.weight.data.copy_(torch.from_numpy(w_ortho))
             m.weight.data = torch.from_numpy(w_ortho)
             try:
@@ -141,7 +141,7 @@ def LSUVinit(model,data, needed_std = 1.0, std_tol = 0.1, max_attempts = 10, do_
         data = data.cuda()
     else:
         model = model.cpu()
-        data = data.cpu() 
+        data = data.cpu()
     if verbose: print( 'Starting LSUV')
     model.apply(count_conv_fc_layers)
     if verbose: print ('Total layers to process:', gg['total_fc_conv_layers'])
@@ -156,12 +156,12 @@ def LSUVinit(model,data, needed_std = 1.0, std_tol = 0.1, max_attempts = 10, do_
             model.apply(add_current_hook)
             out = model(data)
             # print("gg['act_dict']_len", len(gg['act_dict']))
-            # print("gg['act_dict']", (gg['act_dict'])) 
+            # print("gg['act_dict']", (gg['act_dict']))
             current_std = gg['act_dict'].std()
             current_mean = gg['act_dict'].mean()
             # print("---------**-----------", current_std)
             # print("----------&&----------", current_mean)
-            
+
             if verbose: print ('std at layer ',layer_idx, ' = ', current_std)
             #print  gg['act_dict'].shape
             attempts = 0

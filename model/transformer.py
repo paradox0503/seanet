@@ -199,6 +199,7 @@ class TEM(nn.Module):
                 nn.init.xavier_uniform_(p)
 
     def new_forward(self, x):
+        ox=x
         # x=self.begin_ns(x)
         # mean = x.mean(dim=-1, keepdim=True)
         # std = x.std(dim=-1, keepdim=True)
@@ -274,6 +275,7 @@ class TEM(nn.Module):
         return [x,y]
 
     def forward(self, x: Tensor) -> Tensor:
+        ox=x
         _,_,seq_len = x.size()
         if seq_len==96:
             x=self.linear0_1(x)
@@ -349,6 +351,7 @@ class TEM(nn.Module):
         return [x,y]
 
     def old_forward(self, x: Tensor) -> Tensor:
+        ox=x
         # x=self.begin_ns(x)
         # mean = x.mean(dim=-1, keepdim=True)
         # std = x.std(dim=-1, keepdim=True)
@@ -477,6 +480,7 @@ class TransformerDecoderModel(nn.Module):
         # print("!!_____in_the_decoder______!!")
         # print("!!_________________________!!")
         # print("embed:", embed.shape)
+        embed=embed[0]
         embed = self.pos_decoder(embed * math.sqrt(self.dim_embedding))
         # print("embed_pe:", embed.shape)
         embed = self.linear0(embed)

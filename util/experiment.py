@@ -45,19 +45,19 @@ class EmbedConfig:
         self.size_query = size_query
 
 DATASET_CONFIGS = [
-    DatasetConfig("Astro00", "/data/user_jialinhan/process_data_get_record/build/data/astro-dataset.bin", 256, 20000, 10000, 100000000,0),
-    DatasetConfig("Deep1B", "/data/user_jialinhan/process_data_get_record/build/data/deep1b-dataset.bin", 96, 20000, 10000, 100000000,1),
-    DatasetConfig("F5", "/data/user_jialinhan/process_data_get_record/build/data/F5-dataset.bin", 256, 20000, 10000, 100000000,2),
-    DatasetConfig("F10", "/data/user_jialinhan/process_data_get_record/build/data/F10-dataset.bin", 256, 20000, 10000, 100000000,3),
-    DatasetConfig("origin", "/data/user_jialinhan/process_data_get_record/build/data/origin-dataset.bin", 256, 20000, 10000, 100000000,4),
-    DatasetConfig("sald", "/data/user_jialinhan/process_data_get_record/build/data/sald-dataset.bin", 128, 20000, 10000, 100000000,5),
-    DatasetConfig("seismic", "/data/user_jialinhan/process_data_get_record/build/data/seismic-dataset.bin", 256, 20000, 10000, 100000000,6)
+    DatasetConfig("Astro00", "/data/user_jialinhan/process_data_get_record/build/data/astro-dataset.bin", 256, 200000, 10000, 100000000,0),
+    DatasetConfig("Deep1B", "/data/user_jialinhan/process_data_get_record/build/data/deep1b-dataset.bin", 96, 200000, 10000, 100000000,1),
+    DatasetConfig("F5", "/data/user_jialinhan/process_data_get_record/build/data/F5-dataset.bin", 256, 200000, 10000, 100000000,2),
+    # DatasetConfig("F10", "/data/user_jialinhan/process_data_get_record/build/data/F10-dataset.bin", 256, 200000, 10000, 100000000,3),
+    DatasetConfig("origin", "/data/user_jialinhan/process_data_get_record/build/data/origin-dataset.bin", 256, 200000, 10000, 100000000,3),
+    DatasetConfig("sald", "/data/user_jialinhan/process_data_get_record/build/data/sald-dataset.bin", 128, 200000, 10000, 100000000,4),
+    DatasetConfig("seismic", "/data/user_jialinhan/process_data_get_record/build/data/seismic-dataset.bin", 256, 200000, 10000, 100000000,5)
 ]
 embed_CONFIGS = [    #   database path                                               query path
     EmbedConfig("astro", "data_big/astro-dataset.bin",    "data_big/astro-query.bin",256,100),
     EmbedConfig("deep1b", "data_big/deep1b-dataset.bin",    "data_big/deep1b-query.bin",96,1000),
     EmbedConfig("F5", "data_big/F5-dataset.bin",    "data_big/F5-query.bin",256,1000),
-    EmbedConfig("F10", "data_big/F10-dataset.bin",    "data_big/F10-query.bin",256,1000),
+    # EmbedConfig("F10", "data_big/F10-dataset.bin",    "data_big/F10-query.bin",256,1000),
     EmbedConfig("origin", "data_big/origin-dataset.bin",    "data_big/origin-query.bin",256,1000),
     EmbedConfig("sald", "data_big/sald-dataset.bin",    "data_big/sald-query.bin",128,1000),
     EmbedConfig("seismic", "data_big/seismic-dataset.bin",    "data_big/seismic-query.bin",256,1000),
@@ -168,7 +168,7 @@ class Experiment:
             # size_train = int(config.size_train / num_data_base*10)
             # size_val = int(config.size_val / num_data_base)
             size_train = int(config.size_train * num_data_base)
-            size_val = int(config.size_val * num_data_base)
+            size_val = int(config.size_val / num_data_base)
 
             train_samples, val_samples = getSamples(self.__conf, config.path_db,
                                                     f"conf/samples/{config.name}_train_indices.bin",
@@ -176,6 +176,8 @@ class Experiment:
                                                     config.dim_seq, size_train, size_val, config.size_db,
                                                     f"conf/samples/{config.name}_train_samples.bin",
                                                     f"conf/samples/{config.name}_val_samples.bin")
+            # print("val_samples.shape",val_samples.shape)
+            # print("train_samples.shape",train_samples.shape)
             self.train_total_loader.extend(DataLoader(TSDataset(train_samples), batch_size=batch_size, shuffle=False))
             len1=len(self.train_total_loader)-lent
             lent+=len1
@@ -623,7 +625,7 @@ class Experiment:
                     return_l2=torch.zeros(1).to(self.device)
                     # ,db_orig,self.model._AEBuilder__encoder.fucb,self.__conf.getHP('mode')
                 # trans_error = self.trans_loss(func_a,db_batch, query_batch1, db_embedding, query_embedding1)
-                print(trans_error)
+                print("trn",trans_error)
                 # recons_term = torch.zeros(1).to(self.device)
                 # orth_term = torch.zeros(1).to(self.device)
                 if not self.encoder_only:
@@ -677,9 +679,9 @@ class Experiment:
                 db_batch = db_batch[torch.randperm(db_batch.size(0))]
                 query_batch1 = query_batch1[torch.randperm(query_batch1.size(0))]
                 query_batch2 = query_batch2[torch.randperm(query_batch2.size(0))]
-                db_embedding = self.model._AEBuilder__encoder.new_forward(db_batch)
-                query_embedding1 = self.model._AEBuilder__encoder.new_forward(query_batch1)[0]
-                query_embedding2 = self.model._AEBuilder__encoder.new_forward(query_batch2)[0]
+                db_embedding = self.model(db_batch)
+                query_embedding1 = self.model(query_batch1)[0]
+                query_embedding2 = self.model(query_batch2)[0]
                 db_orig=db_embedding[1]
                 db_embedding=db_embedding[0]
                 #zijixied
@@ -702,7 +704,7 @@ class Experiment:
                 trans_error = self.trans_loss(func_a,db_batch, query_batch1,query_batch2, db_embedding, query_embedding1, query_embedding2)#转换误差
                 # trans_error = self.trans_loss(func_a,db_batch, query_batch1, db_embedding, query_embedding1)
                 loss=jlh_regularization+trans_error+return_l2 #jiade
-                # print(trans_error)
+                print("val",trans_error)
                 trans_errors.append(trans_error.detach().item())
                 jlh_recons.append(jlh_recons_term.detach().item())
                 jlh_regulars.append(jlh_regularization.detach().item())

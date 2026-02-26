@@ -6,7 +6,7 @@
     "main_path":"/data/user_jialinhan/",
     "num_epoch": 100,
     "fine_epoch":10,
-    "encoder": "timesnet",
+    "encoder": "transformer",
     "decoder": "none",
 
     "masking_ratio":0.35,
