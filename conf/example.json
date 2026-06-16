@@ -8,11 +8,12 @@
     "fine_epoch":10,
     "encoder": "transformer",
     "decoder": "none",
+    "alpha":0.8,
 
-    "masking_ratio":0.35,
+    "masking_ratio":0.4,
+    "patch_len":32,
+    "stride":32,
 
-    "stride":16,
-    "patch_len":16,
     "d_model":128,
     "nhead":4,
     "num_encoder_layers":7,

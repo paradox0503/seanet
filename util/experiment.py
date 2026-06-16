@@ -45,13 +45,13 @@ class EmbedConfig:
         self.size_query = size_query
 
 DATASET_CONFIGS = [
-    DatasetConfig("Astro00", "/data/user_jialinhan/process_data_get_record/build/data/astro-dataset.bin", 256, 200000, 10000, 100000000,0),
-    DatasetConfig("Deep1B", "/data/user_jialinhan/process_data_get_record/build/data/deep1b-dataset.bin", 96, 200000, 10000, 100000000,1),
-    DatasetConfig("F5", "/data/user_jialinhan/process_data_get_record/build/data/F5-dataset.bin", 256, 200000, 10000, 100000000,2),
-    DatasetConfig("F10", "/data/user_jialinhan/process_data_get_record/build/data/F10-dataset.bin", 256, 200000, 10000, 100000000,3),
-    DatasetConfig("origin", "/data/user_jialinhan/process_data_get_record/build/data/origin-dataset.bin", 256, 200000, 10000, 100000000,4),
-    DatasetConfig("sald", "/data/user_jialinhan/process_data_get_record/build/data/sald-dataset.bin", 128, 200000, 10000, 100000000,5),
-    DatasetConfig("seismic", "/data/user_jialinhan/process_data_get_record/build/data/seismic-dataset.bin", 256, 200000, 10000, 100000000,6)
+    DatasetConfig("Astro00", "/data/user_jialinhan/process_data_get_record/build/data/astro-dataset.bin", 256, 400000, 10000, 100000000,0),
+    DatasetConfig("Deep1B", "/data/user_jialinhan/process_data_get_record/build/data/deep1b-dataset.bin", 96, 400000, 10000, 100000000,1),
+    DatasetConfig("F5", "/data/user_jialinhan/process_data_get_record/build/data/F5-dataset.bin", 256, 400000, 10000, 100000000,2),
+    DatasetConfig("F10", "/data/user_jialinhan/process_data_get_record/build/data/F10-dataset.bin", 256, 400000, 10000, 100000000,3),
+    DatasetConfig("origin", "/data/user_jialinhan/process_data_get_record/build/data/origin-dataset.bin", 256, 400000, 10000, 100000000,4),
+    DatasetConfig("sald", "/data/user_jialinhan/process_data_get_record/build/data/sald-dataset.bin", 128, 400000, 10000, 100000000,5),
+    DatasetConfig("seismic", "/data/user_jialinhan/process_data_get_record/build/data/seismic-dataset.bin", 256, 400000, 10000, 100000000,6)
 ]
 embed_CONFIGS = [    #   database path                                               query path
     EmbedConfig("astro", "data_big/astro-dataset.bin",    "data_big/astro-query.bin",256,100),
@@ -436,11 +436,12 @@ class Experiment:
 
                 self.epoch += 1
                 print("第",self.epoch,"周期ing")
-                # func_a = self.model._AEBuilder__encoder.fuc
-                func_a=1
+                # alpha = self.model._AEBuilder__encoder.fuc
+                alpha=self.__conf.getHP('alpha')
 
-                self.__train(func_a)
-                self.__validate(func_a)
+
+                self.__train(alpha)
+                self.__validate(alpha)
 
                 self.logger.info('e{:d} time = {:.3f}s'.format(self.epoch, timer() - start))
 
@@ -505,7 +506,7 @@ class Experiment:
         print("更换成功！！！")
 
 
-    def __train(self, func_a: float) -> None:#用来对图像进行编码和解码，以便在encode-decode过程中学习到embedding
+    def __train(self, alpha: float) -> None:#用来对图像进行编码和解码，以便在encode-decode过程中学习到embedding
         recons_errors = []
         orth_terms = []
         trans_errors = []
@@ -558,7 +559,7 @@ class Experiment:
                 # print("db_batch")
                 # print(db_batch.shape)
                 # 给trans_erro加一个a的参数
-                trans_error = self.trans_loss(func_a,db_batch, query_batch1, query_batch2,db_embedding, query_embedding1,query_embedding2)
+                trans_error = self.trans_loss(alpha,db_batch, query_batch1, query_batch2,db_embedding, query_embedding1,query_embedding2)
 
                 trans_error.backward()
                 self.optimizer.step()
@@ -566,7 +567,7 @@ class Experiment:
                 trans_errors.append(trans_error.detach().item())
 
             logging.info('t{:d} trans = {:.4f}'.format(self.epoch, np.mean(trans_errors)))
-            logging.info('t{:d} func_a = {:.4f}'.format(self.epoch, func_a))
+            logging.info('t{:d} alpha = {:.4f}'.format(self.epoch, alpha))
 
         elif self.__conf.getHP('train_type') == 'linearlycombine':
             # tp=0
@@ -612,7 +613,7 @@ class Experiment:
 
                     #加个参数a
 
-                trans_error = self.trans_loss(func_a,db_batch, query_batch1,query_batch2, db_embedding, query_embedding1,query_embedding2)
+                trans_error = self.trans_loss(alpha,db_batch, query_batch1,query_batch2, db_embedding, query_embedding1,query_embedding2)
                 if self.__conf.getHP("mode")=="pretrain":
                     # print("jisuanl")
 
@@ -620,7 +621,7 @@ class Experiment:
                 else:
                     return_l2=0
                     # ,db_orig,self.model._AEBuilder__encoder.fucb,self.__conf.getHP('mode')
-                # trans_error = self.trans_loss(func_a,db_batch, query_batch1, db_embedding, query_embedding1)
+                # trans_error = self.trans_loss(alpha,db_batch, query_batch1, db_embedding, query_embedding1)
                 print(trans_error)
                 # recons_term = torch.zeros(1).to(self.device)
                 # orth_term = torch.zeros(1).to(self.device)
@@ -648,22 +649,22 @@ class Experiment:
                 trans_errors.append(trans_error.detach().item())
                 return_l2s.append(return_l2.detach().item())
                 losses.append(loss.detach().item())
-                #func_as.append(func_a.detach().item())
+                #alphas.append(alpha.detach().item())
 
             self.logger.info('t{:d} recons = {:.4f}'.format(self.epoch, np.mean(recons_errors)))#重构误差
             self.logger.info('t{:d} orth = {:.4f}'.format(self.epoch, np.mean(orth_terms)))#正交化项  正交化项（orthogonalization term）的平均值记录到日志中
             self.logger.info('t{:d} trans = {:.4f}'.format(self.epoch, np.mean(trans_errors)))#转换误差
             self.logger.info('t{:d} recon_encoder = {:.4f}'.format(self.epoch, np.mean(return_l2s)))#转换误差
-            self.logger.info('t{:d} fuca = {:.4f}'.format(self.epoch, self.model._AEBuilder__encoder.fuc.detach().item()))#转换误差
+            self.logger.info('t{:d} alpha = {:.4f}'.format(self.epoch, alpha))#转换误差
             self.logger.info('t{:d} fucb = {:.4f}'.format(self.epoch, self.model._AEBuilder__encoder.fucb.detach().item()))#转换误差
             self.logger.info('t{:d} loss = {:.4f}'.format(self.epoch, np.mean(losses)))#转换误差
-            # self.logger.info('t{:d} func_a = {:.4f}'.format(self.epoch, func_a))
+            # self.logger.info('t{:d} alpha = {:.4f}'.format(self.epoch, alpha))
 
         else:
             raise ValueError('cannot train')
 
 
-    def __validate(self,func_a: float) -> None:
+    def __validate(self,alpha: float) -> None:
         trans_errors = []
         jlh_recons=[]
         jlh_regulars=[]
@@ -692,12 +693,12 @@ class Experiment:
                 jlh_orth_term = self.__orth_reg()
                 jlh_regularization = jlh_recons_term + jlh_orth_term
                 if self.__conf.getHP("mode")=="pretrain":
-                    return_l2=mean(self.__l2(squeeze(db_orig), squeeze(db_batch)))*(0.0001+abs(self.model._AEBuilder__encoder.fucb))
+                    return_l2=mean(self.__l2(squeeze(db_orig), squeeze(db_batch))) * self.__conf.getHP("func_b")
                     # print("encoder_recon",return_l2)
                 else:
                     return_l2=0
-                trans_error = self.trans_loss(func_a,db_batch, query_batch1,query_batch2, db_embedding, query_embedding1, query_embedding2)#转换误差
-                # trans_error = self.trans_loss(func_a,db_batch, query_batch1, db_embedding, query_embedding1)
+                trans_error = self.trans_loss(alpha,db_batch, query_batch1,query_batch2, db_embedding, query_embedding1, query_embedding2)#转换误差
+                # trans_error = self.trans_loss(alpha,db_batch, query_batch1, db_embedding, query_embedding1)
                 loss=jlh_regularization+trans_error+return_l2 #jiade
                 # print(trans_error)
                 trans_errors.append(trans_error.detach().item())

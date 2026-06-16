@@ -11,6 +11,13 @@ conf/our_pretrain.pkl
 guding-func_a-fine
 guding-func_a-pretrain
 norm_paa-fine
+embed-output
+loss_weight
+mask_ratio
+alpha
+patch_patchlen_stride
+stride_patchlen_stride
+time.md
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

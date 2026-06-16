@@ -54,7 +54,7 @@ class CreatPatch(nn.Module):
 
         self.patch_len=conf.getHP('patch_len')
         self.stride=conf.getHP('stride')
-        seq_len=conf.getHP('dim_series')
+        seq_len=conf.getHP('first_dim')
         self.num_patch = (max(seq_len, self.patch_len)-self.patch_len) // self.stride + 1
         tgt_len = self.patch_len  + self.stride*(self.num_patch-1)
         self.s_begin = seq_len - tgt_len
