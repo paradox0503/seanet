@@ -243,40 +243,6 @@ class Experiment:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-
-    import numpy as np
-
-    def calculate_sample_variance(self, sample,  segments=16):
-        dim_series=len(sample)
-        # import pdb; pdb.set_trace()
-        """计算单个样本的16段方差和（与之前逻辑一致）"""
-        segment_length = dim_series // segments
-        # if len(sample) != dim_series:
-        #     raise ValueError(f"样本维度应为{dim_series}，实际为{len(sample)}")
-
-        total_variance = 0.0
-        for i in range(segments):
-            start = i * segment_length
-            end = start + segment_length
-            segment = sample[start:end]
-
-            # 计算分段平均值
-            segment_sum = np.sum(segment) if isinstance(segment, np.ndarray) else torch.sum(segment).item()
-            mean = segment_sum / segment_length
-
-            # 计算平方差之和
-            if isinstance(segment, np.ndarray):
-                squared_diff_sum = np.sum((segment - mean) **2)
-            else:  # 处理torch张量
-                squared_diff_sum = torch.sum((segment - mean)** 2).item()
-
-            # 累加方差
-            variance = squared_diff_sum / segment_length
-            total_variance += variance
-
-        return total_variance
-
-
     def shuffle_batch_inter(self,batch_list):
         """
         打乱每个batch内部的数据顺序，但保持batch之间的顺序不变
@@ -302,6 +268,39 @@ class Experiment:
 
         return shuffled_batches
 
+    def __calculate_curriculum_loss(self, batch: torch.Tensor, alpha: float) -> float:
+        """Calculate one batch's difficulty without updating model parameters."""
+        db_batch = batch[torch.randperm(batch.size(0))]
+        query_batch1 = batch[torch.randperm(batch.size(0))]
+        query_batch2 = batch[torch.randperm(batch.size(0))]
+
+        query_embedding1 = self.model.encode(query_batch1)[0]
+        query_embedding2 = self.model.encode(query_batch2)[0]
+
+        db_output = self.model.encode(db_batch)
+        db_embedding = db_output[0]
+        db_orig = db_output[1]
+
+        trans_error = self.trans_loss(
+            alpha,
+            db_batch,
+            query_batch1,
+            query_batch2,
+            db_embedding,
+            query_embedding1,
+            query_embedding2,
+        )
+        return_l2 = mean(self.__l2(squeeze(db_orig), squeeze(db_batch))) * self.__conf.getHP("func_b")
+
+        if self.encoder_only:
+            recons_term = torch.zeros(1).to(self.device)
+        else:
+            db_reconstructed = self.model.decode(db_embedding)
+            recons_term = self.recons_weight * self.recons_reg(db_batch, db_reconstructed)
+
+        loss = trans_error + self.__orth_reg() + recons_term + return_l2
+        return loss.detach().item()
+
     def run(self) -> None:
         if not self.has_setup:
             self.setup()
@@ -312,30 +311,39 @@ class Experiment:
 
         if mode=="pretrain":
             print("pretrain")
+            if self.__conf.getHP('train_type') != 'linearlycombine':
+                raise ValueError("loss-based curriculum requires train_type='linearlycombine'")
+            if not self.train_total_loader:
+                raise ValueError('cannot build curriculum from an empty training set')
+
+            alpha = self.__conf.getHP('alpha')
+            # The initial pass scores difficulty only; it is not a training epoch.
             batch_metrics = []
-            for idx,batch  in enumerate(self.train_total_loader):
-                #     batch[0],batch[-1]排序
-                first_sample = batch[0].cpu().numpy() if isinstance(batch[0], torch.Tensor) else batch[0]
-                last_sample = batch[-1].cpu().numpy() if isinstance(batch[-1], torch.Tensor) else batch[-1]
-                # import pdb; pdb.set_trace()
+            was_training = self.model.training
+            self.model.eval()
+            try:
+                with torch.no_grad():
+                    for idx, batch in enumerate(self.train_total_loader):
+                        loss_value = self.__calculate_curriculum_loss(batch, alpha)
+                        if not math.isfinite(loss_value):
+                            raise ValueError(
+                                f'non-finite curriculum loss at batch {idx}: {loss_value}'
+                            )
+                        batch_metrics.append((loss_value, idx))
+            finally:
+                self.model.train(was_training)
 
-                # 计算两个样本的方差和
-                var_first = self.calculate_sample_variance(first_sample[0])
-                var_last = self.calculate_sample_variance(last_sample[0])
-
-                # 计算方差平均值
-                var_mean = (var_first + var_last) / 2
-
-                # 存储（方差平均值，原索引）
-                batch_metrics.append((var_mean, idx))
-            # 按照方差平均值从小到大排序
-            batch_metrics.sort(key=lambda x: x[0])
-
-            # 提取排序后的索引
-            total_indices = [idx for (_, idx) in batch_metrics]
-            self.index_list_total=[self.index_list[i] for i in total_indices]
+            batch_metrics.sort(key=lambda item: item[0])
+            total_indices = [idx for _, idx in batch_metrics]
             total_num_batches = len(total_indices)
             batch_size_per_round = max(1, int(total_num_batches / 10))
+            print(
+                "Loss difficulty evaluation completed: "
+                f"batches={total_num_batches}, "
+                f"min_loss={batch_metrics[0][0]:.6f}, "
+                f"max_loss={batch_metrics[-1][0]:.6f}, "
+                f"batches_per_epoch={batch_size_per_round}"
+            )
             print(f"每轮选取的批次数量: {batch_size_per_round}")
 
             while self.epoch < self.max_epoch:
@@ -343,45 +351,31 @@ class Experiment:
 
 
                 if self.epoch < 80:
-                    # 前80轮：分8个区间的课程学习策略
-                    if total_num_batches <= batch_size_per_round:
-                        # 如果总批次小于每轮选取数量，直接使用全部
-                        selected_indices = total_indices
-                    else:
-                        # 将total_indices分为8个区间
-                        interval_size = total_num_batches // 8
-                        # 计算当前处于第几个区间（0-7）
-                        # 每10轮一个区间：0-9轮→0，10-19轮→1，…，70-79轮→7
-                        interval_idx = self.epoch // 10
-                        # 确保区间索引不超过7
-                        interval_idx = min(interval_idx, 7)
+                    stage_index = min(self.epoch // 10, 7)
+                    pool_end = max(
+                        1,
+                        math.ceil(total_num_batches * (stage_index + 1) / 8),
+                    )
+                    curriculum_pool = total_indices[:pool_end]
 
-                        # 计算当前区间的起始和结束索引
-                        start = interval_idx * interval_size
-                        # 最后一个区间可能需要延伸到末尾，确保覆盖所有数据
-                        end = (interval_idx + 1) * interval_size if interval_idx < 7 else total_num_batches
-
-                        # 从当前区间中随机选择batch_size_per_round个indices
-                        # 生成区间内的随机索引
-                        if end - start <= batch_size_per_round:
-                            # 如果区间大小小于所需数量，取全部
-                            interval_indices = total_indices[start:end]
-                        else:
-                            # 随机选择指定数量的indices
-                            random_pos = torch.randperm(end - start)[:batch_size_per_round]
-                            interval_indices = [total_indices[start + i] for i in random_pos]
-
-                        selected_indices = interval_indices
+                    if self.epoch % 10 == 0:
+                        print(
+                            f"Curriculum stage {stage_index + 1}/8: "
+                            f"candidate_batches={len(curriculum_pool)}/{total_num_batches}"
+                        )
                 else:
-                    # 80轮以后：在整个total_indices中随机选取
-                    if total_num_batches <= batch_size_per_round:
-                        selected_indices = total_indices
-                    else:
-                        random_indices = torch.randperm(total_num_batches)[:batch_size_per_round]
-                        selected_indices = [total_indices[i] for i in random_indices]
+                    curriculum_pool = total_indices
 
-
-
+                if len(curriculum_pool) <= batch_size_per_round:
+                    selected_indices = curriculum_pool
+                else:
+                    random_positions = torch.randperm(
+                        len(curriculum_pool)
+                    )[:batch_size_per_round].tolist()
+                    selected_indices = [
+                        curriculum_pool[position]
+                        for position in random_positions
+                    ]
 
                 self.train_db_loader = [batches[i] for i in selected_indices]
                 self.train_query_loader1 = [batches[i] for i in selected_indices]
@@ -393,8 +387,9 @@ class Experiment:
                     self.train_list.append([])
                     self.train_query_list.append([])
                 for i in range(len(selected_indices)):
-                    self.train_list[self.index_list_total[selected_indices[i]]].append(i)
-                    self.train_query_list[self.index_list_total[selected_indices[i]]].append(i)
+                    dataset_index = self.index_list[selected_indices[i]]
+                    self.train_list[dataset_index].append(i)
+                    self.train_query_list[dataset_index].append(i)
 
                 # 分配 train_query_loader1，确保相同数据集内打乱
                 for i in range(len(self.train_list)):
