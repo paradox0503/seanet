@@ -49,9 +49,9 @@ DATASET_CONFIGS = [
     DatasetConfig("Deep1B", "/data/user_jialinhan/data_big/deep1b-dataset.bin", 96, 400000, 10000, 100000000,1),
     DatasetConfig("F5", "/data/user_jialinhan/data_big/F5-dataset.bin", 256, 400000, 10000, 100000000,2),
     # DatasetConfig("F10", "/data/user_jialinhan/data_big/F10-dataset.bin", 256, 400000, 10000, 100000000,3),
-    DatasetConfig("origin", "/data/user_jialinhan/data_big/origin-dataset.bin", 256, 400000, 10000, 100000000,4),
-    DatasetConfig("sald", "/data/user_jialinhan/data_big/sald-dataset.bin", 128, 400000, 10000, 100000000,5),
-    DatasetConfig("seismic", "/data/user_jialinhan/data_big/seismic-dataset.bin", 256, 400000, 10000, 100000000,6)
+    DatasetConfig("origin", "/data/user_jialinhan/data_big/origin-dataset.bin", 256, 400000, 10000, 100000000,3),
+    DatasetConfig("sald", "/data/user_jialinhan/data_big/sald-dataset.bin", 128, 400000, 10000, 100000000,4),
+    DatasetConfig("seismic", "/data/user_jialinhan/data_big/seismic-dataset.bin", 256, 400000, 10000, 100000000,5)
 ]
 embed_CONFIGS = [    #   database path                                               query path
     EmbedConfig("astro", "data_big/astro-dataset.bin",    "data_big/astro-query.bin",256,100),
