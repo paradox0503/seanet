@@ -130,7 +130,7 @@
     "settings": {
         "activation_conv": "relu",
         "activation_linear": "lecuntanh",
-        "alpha": 1.5,
+        "alpha": 0.8,
         "checkpoint_folder": "conf",
         "checkpoint_mode": "last",
         "checkpoint_postfix": "pickle",
