@@ -2,6 +2,7 @@
 
 import sys
 import argparse
+from pathlib import Path
 
 from util.experiment import Experiment
 from util.conf import Configuration
@@ -29,7 +30,8 @@ def main(argv):
     end_time = time.time()
     msg = f"{end_time - start_time}"
 
-    with open("conf/0time.log", "a", encoding="utf-8") as f:
+    timing_log = Path(conf.getHP('log_filepath')).with_name('0time.log')
+    with open(timing_log, "a", encoding="utf-8") as f:
         f.write(msg + "\n")
 
 

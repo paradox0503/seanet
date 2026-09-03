@@ -8,6 +8,9 @@ sanyuanzu-pretrain
 固定func_a-fine
 conf/100.pickle
 conf/our_pretrain.pkl
+conf/random_baseline/*.pickle
+conf/random_baseline/*.pkl
+conf/random_baseline/conf.json
 guding-func_a-fine
 guding-func_a-pretrain
 norm_paa-fine

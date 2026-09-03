@@ -21,6 +21,7 @@ from model.builder import AEBuilder
 from util.data import TSDataset, getSamples
 from util.conf import Configuration
 from util.data import embedData
+from util.batch_schedule import batches_per_epoch, candidate_batch_indices, select_batch_indices
 import random
 import math
 from torch.nn import Module, PairwiseDistance
@@ -312,70 +313,83 @@ class Experiment:
         if mode=="pretrain":
             print("pretrain")
             if self.__conf.getHP('train_type') != 'linearlycombine':
-                raise ValueError("loss-based curriculum requires train_type='linearlycombine'")
+                raise ValueError("pretraining requires train_type='linearlycombine'")
             if not self.train_total_loader:
-                raise ValueError('cannot build curriculum from an empty training set')
+                raise ValueError('cannot train with an empty training set')
 
-            alpha = self.__conf.getHP('alpha')
-            # The initial pass scores difficulty only; it is not a training epoch.
-            batch_metrics = []
-            was_training = self.model.training
-            self.model.eval()
-            try:
-                with torch.no_grad():
-                    for idx, batch in enumerate(self.train_total_loader):
-                        loss_value = self.__calculate_curriculum_loss(batch, alpha)
-                        if not math.isfinite(loss_value):
-                            raise ValueError(
-                                f'non-finite curriculum loss at batch {idx}: {loss_value}'
-                            )
-                        batch_metrics.append((loss_value, idx))
-            finally:
-                self.model.train(was_training)
-
-            batch_metrics.sort(key=lambda item: item[0])
-            total_indices = [idx for _, idx in batch_metrics]
-            total_num_batches = len(total_indices)
-            batch_size_per_round = max(1, int(total_num_batches / 10))
-            print(
-                "Loss difficulty evaluation completed: "
+            training_schedule = self.__conf.getHP('training_schedule')
+            if training_schedule not in ('loss_curriculum', 'random_baseline'):
+                raise ValueError(f'unknown training schedule: {training_schedule}')
+            total_num_batches = len(self.train_total_loader)
+            batch_size_per_round = batches_per_epoch(total_num_batches)
+            schedule_message = (
+                f"Training schedule={training_schedule}: "
                 f"batches={total_num_batches}, "
-                f"min_loss={batch_metrics[0][0]:.6f}, "
-                f"max_loss={batch_metrics[-1][0]:.6f}, "
                 f"batches_per_epoch={batch_size_per_round}"
             )
+            print(schedule_message)
+            self.logger.info(schedule_message)
+
+            if training_schedule == 'loss_curriculum':
+                alpha = self.__conf.getHP('alpha')
+                # The initial pass scores difficulty only; it is not a training epoch.
+                batch_metrics = []
+                was_training = self.model.training
+                self.model.eval()
+                try:
+                    with torch.no_grad():
+                        for idx, batch in enumerate(self.train_total_loader):
+                            loss_value = self.__calculate_curriculum_loss(batch, alpha)
+                            if not math.isfinite(loss_value):
+                                raise ValueError(
+                                    f'non-finite curriculum loss at batch {idx}: {loss_value}'
+                                )
+                            batch_metrics.append((loss_value, idx))
+                finally:
+                    self.model.train(was_training)
+
+                batch_metrics.sort(key=lambda item: item[0])
+                total_indices = [idx for _, idx in batch_metrics]
+                print(
+                    "Loss difficulty evaluation completed: "
+                    f"batches={total_num_batches}, "
+                    f"min_loss={batch_metrics[0][0]:.6f}, "
+                    f"max_loss={batch_metrics[-1][0]:.6f}, "
+                    f"batches_per_epoch={batch_size_per_round}"
+                )
+            else:
+                total_indices = list(range(total_num_batches))
+                baseline_message = (
+                    "Random baseline: initial loss evaluation skipped; "
+                    "all batches are eligible in every epoch."
+                )
+                print(baseline_message)
+                self.logger.info(baseline_message)
             print(f"每轮选取的批次数量: {batch_size_per_round}")
 
             while self.epoch < self.max_epoch:
                 batches = [batch for batch in self.train_total_loader]
 
 
-                if self.epoch < 80:
+                curriculum_pool = candidate_batch_indices(
+                    training_schedule, total_indices, self.epoch
+                )
+                if training_schedule == 'loss_curriculum' and self.epoch < 80:
                     stage_index = min(self.epoch // 10, 7)
-                    pool_end = max(
-                        1,
-                        math.ceil(total_num_batches * (stage_index + 1) / 8),
-                    )
-                    curriculum_pool = total_indices[:pool_end]
 
                     if self.epoch % 10 == 0:
                         print(
                             f"Curriculum stage {stage_index + 1}/8: "
                             f"candidate_batches={len(curriculum_pool)}/{total_num_batches}"
                         )
-                else:
-                    curriculum_pool = total_indices
-
-                if len(curriculum_pool) <= batch_size_per_round:
-                    selected_indices = curriculum_pool
-                else:
+                random_positions = []
+                if len(curriculum_pool) > batch_size_per_round:
                     random_positions = torch.randperm(
                         len(curriculum_pool)
                     )[:batch_size_per_round].tolist()
-                    selected_indices = [
-                        curriculum_pool[position]
-                        for position in random_positions
-                    ]
+                selected_indices = select_batch_indices(
+                    curriculum_pool, batch_size_per_round, random_positions
+                )
 
                 self.train_db_loader = [batches[i] for i in selected_indices]
                 self.train_query_loader1 = [batches[i] for i in selected_indices]
@@ -444,7 +458,9 @@ class Experiment:
             self.__model_change()
 
             import pickle
-            with open('conf/our_pretrain.pkl', 'wb') as f:
+            pickle_path = os.path.abspath(self.__conf.getHP('pickle'))
+            os.makedirs(os.path.dirname(pickle_path), exist_ok=True)
+            with open(pickle_path, 'wb') as f:
                 pickle.dump(self.model._AEBuilder__encoder, f)
         else:
             import pickle

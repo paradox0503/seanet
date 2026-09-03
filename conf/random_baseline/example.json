@@ -1,9 +1,9 @@
 {
     "mode":"pretrain",
-    "training_schedule":"loss_curriculum",
+    "training_schedule":"random_baseline",
     "func_b":0.01,
-    "pickle":"/data/user_jialinhan/0kechegnxuexi/Transnet-pretrain-cl/conf/our_pretrain.pkl",
-    "result_path":"/data/user_jialinhan/0kechegnxuexi/Transnet-pretrain-cl/conf/",
+    "pickle":"conf/random_baseline/our_pretrain.pkl",
+    "result_path":"conf/random_baseline/",
     "main_path":"/data/user_jialinhan/",
     "num_epoch": 100,
     "fine_epoch":10,
@@ -86,5 +86,5 @@
     "reverse_de_dilation": false,
     "to_scale_lc": true,
     "to_scale_lr": true,
-    "name": "example"
+    "name": "random_baseline"
 }
