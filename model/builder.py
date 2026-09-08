@@ -9,6 +9,8 @@ from model.RNNAE import RNNEncoder, RNNDecoder
 from model.FDJAE import FDJEncoder, FDJDecoder
 from model.InceptionAE import InceptionEncoder, InceptionDecoder
 from model.timesnet import TimesNetEncoder, TimesNetDecoder
+from model.timemixer import TimeMixerEncoder, TimeMixerDecoder
+from model.transformer import TEM, TransformerDecoderModel
 
 
 class AEBuilder(nn.Module):
@@ -29,6 +31,10 @@ class AEBuilder(nn.Module):
             self.__encoder = RNNEncoder(conf)
         elif encoder_name == 'timesnet':
             self.__encoder = TimesNetEncoder(conf)
+        elif encoder_name == 'timemixer':
+            self.__encoder = TimeMixerEncoder(conf)
+        elif encoder_name == 'transformer':
+            self.__encoder = TEM(conf)
         else:
             raise ValueError('encoder {:s} isn\'t supported yet'.format(encoder_name))
 
@@ -48,6 +54,10 @@ class AEBuilder(nn.Module):
             self.__decoder = RNNDecoder(conf)
         elif decoder_name == 'timesnet':
             self.__decoder = TimesNetDecoder(conf)
+        elif decoder_name == 'timemixer':
+            self.__decoder = TimeMixerDecoder(conf)
+        elif decoder_name == 'transformer':
+            self.__decoder = TransformerDecoderModel(conf)
         elif decoder_name == 'none':
             self.__decoder =  None
         else:
