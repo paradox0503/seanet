@@ -177,6 +177,16 @@ class Experiment:
             self.__checkpoint()
 
         if self.__conf.getHP('to_embed'):
+            if self.__conf.getHP('datasets'):
+                self.model.eval()
+                for entry in self.__conf.getHP('datasets'):
+                    for source, output, size in [('database_path', 'db_embedding_path', 'size_db'),
+                                                  ('query_path', 'query_embedding_path', 'size_query')]:
+                        embedData(self.model, entry[source], entry[output], entry[size],
+                                  batch_size=self.__conf.getHP('embed_batch'), original_dim=entry['dim_series'],
+                                  embedded_dim=self.__conf.getHP('dim_embedding'), device=self.device,
+                                  encoder='residual')
+                return
             embedData(self.model, self.__conf.getHP('database_path'), self.__conf.getHP('db_embedding_path'), 
                       self.__conf.getHP('size_db'), batch_size=self.__conf.getHP('embed_batch'), original_dim=self.__conf.getHP('dim_series'), 
                       embedded_dim=self.__conf.getHP('dim_embedding'), device=self.device, encoder=self.__conf.getHP('encoder'))    

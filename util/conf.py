@@ -13,11 +13,13 @@ from torch import Tensor, nn, optim
 
 from model.activation import LeCunTanh
 from model.normalization import AdaNorm
+from util.multidata import prepare_datasets
 
 
 class Configuration:
     def __init__(self, path: str = '', dump: bool = False, existing: bool = False):
         self.defaults = {
+            'datasets': [],
             'dataset_name': 'rw',
             'database_path': 'default',
             'query_path': 'default',
@@ -188,6 +190,22 @@ class Configuration:
 
 
     def __validate(self) -> None:
+        if self.getHP('datasets'):
+            if self.getHP('encoder') != 'residual' or self.getHP('dim_series') != 256:
+                raise ValueError('Multi-dataset baseline requires encoder=residual and dim_series=256')
+            if self.getHP('sampling_name') != 'uniform':
+                raise ValueError('Multi-dataset baseline requires sampling_name=uniform')
+            entries = prepare_datasets(self.getHP('datasets'), self.getHP('size_train'),
+                                       self.getHP('size_val'), self.getHP('to_embed'))
+            self.setHP('datasets', entries)
+            # Legacy setup fields describe the first source; data loading/export
+            # explicitly iterate over every entry below.
+            self.setHP('database_path', entries[0]['database_path'])
+            self.setHP('query_path', entries[0].get('query_path', entries[0]['database_path']))
+            self.setHP('size_db', sum(entry['size_db'] for entry in entries))
+            self.setHP('size_train', sum(entry['size_train'] for entry in entries))
+            self.setHP('size_val', sum(entry['size_val'] for entry in entries))
+
         for key, value in self.settings.items():
             if key in self.legals and value not in self.legals[key]:
                 raise ValueError('illegal setting {} for {} ({})'.format(value, key, ', '.join([str(item) for item in self.legals[key]])))
@@ -215,10 +233,10 @@ class Configuration:
         dim_series = self.getHP('dim_series')
 
         db_size = self.getHP('size_db')
-        assert db_size % 1000000 == 0
+        assert self.getHP('datasets') or db_size % 1000000 == 0
 
         train_size = self.getHP('size_train')
-        assert train_size % 1000 == 0
+        assert self.getHP('datasets') or train_size % 1000 == 0
 
         encoder_code = self.getHP('encoder')
         decoder_code = self.getHP('decoder')
@@ -236,7 +254,8 @@ class Configuration:
         sample_root = os.path.join(result_root, 'samples')
 
         assert self.getHP('database_path') != 'default' and os.path.isfile(self.getHP('database_path'))
-        assert self.getHP('query_path') != 'default' and os.path.isfile(self.getHP('query_path'))
+        if not self.getHP('datasets') or self.getHP('to_embed'):
+            assert self.getHP('query_path') != 'default' and os.path.isfile(self.getHP('query_path'))
         #assert self.getHP('coconut_libpath') != 'default' and os.path.isfile(self.getHP('coconut_libpath'))
 
         if self.getHP('train_path') == 'default':
@@ -292,6 +311,12 @@ class Configuration:
 
         if self.getHP('checkpoint_folder') == 'default':
             self.setHP('checkpoint_folder', result_root)
+
+        if self.getHP('datasets'):
+            for entry in self.getHP('datasets'):
+                prefix = os.path.join(result_root, entry['dataset_name'])
+                entry.setdefault('db_embedding_path', prefix + '-database-embedding.bin')
+                entry.setdefault('query_embedding_path', prefix + '-query-embedding.bin')
 
         self.default_confpath = os.path.join(result_root, self.getHP('default_conf_filename'))
 

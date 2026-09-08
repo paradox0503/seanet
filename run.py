@@ -5,6 +5,7 @@ import argparse
 
 from util.experiment import Experiment
 from util.conf import Configuration
+from util.multidata import prepare_datasets
 
 
 def main(argv):
@@ -15,10 +16,15 @@ def main(argv):
 
     args = parser.parse_args(argv[1: ])
 
-    conf = Configuration(args.confpath, dump=True)
+    conf = Configuration(args.confpath)
 
     if args.to_embed:
         conf.setHP('to_embed', True)
+        if conf.getHP('datasets'):
+            conf.setHP('datasets', prepare_datasets(conf.getHP('datasets'),
+                       conf.getHP('size_train'), conf.getHP('size_val'), True))
+
+    conf.dumpConf()
 
     experiment = Experiment(conf)
     experiment.run()
@@ -26,4 +32,3 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv)
-    

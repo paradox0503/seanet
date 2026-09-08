@@ -1,0 +1,33 @@
+{
+    "dataset_name": "mixed",
+    "datasets": [
+        {
+            "dataset_name": "data96",
+            "database_path": "/path/to/data96-dataset.bin",
+            "dim_series": 96
+        },
+        {
+            "dataset_name": "data128",
+            "database_path": "/path/to/data128-dataset.bin",
+            "dim_series": 128
+        },
+        {
+            "dataset_name": "data256",
+            "database_path": "/path/to/data256-dataset.bin",
+            "dim_series": 256
+        }
+    ],
+    "encoder": "residual",
+    "decoder": "residual",
+    "dim_series": 256,
+    "dim_embedding": 16,
+    "sampling_name": "uniform",
+    "size_train": 20000,
+    "size_val": 10000,
+    "size_batch": 256,
+    "num_epoch": 100,
+    "device": "cuda",
+    "to_embed": false,
+    "if_record": false,
+    "name": "multi_residual"
+}

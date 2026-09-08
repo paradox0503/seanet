@@ -1,6 +1,7 @@
 # coding = utf-8
 
 from torch import nn, Tensor
+from torch.nn import functional as F
 
 from util.conf import Configuration
 from model.commons import Squeeze, Reshape
@@ -117,6 +118,7 @@ class _ResNet(nn.Module):
 class ResidualEncoder(nn.Module):
     def __init__(self, conf: Configuration):
         super(ResidualEncoder, self).__init__()
+        self.__dim_series = conf.getHP('dim_series')
 
         dim_embedding = conf.getHP('dim_embedding')
         num_channels = conf.getHP('num_en_channels')
@@ -136,6 +138,11 @@ class ResidualEncoder(nn.Module):
 
 
     def forward(self, input: Tensor) -> Tensor:
+        length = input.shape[-1]
+        if length > self.__dim_series:
+            raise ValueError('Input length %d exceeds model length %d' % (length, self.__dim_series))
+        if length < self.__dim_series:
+            input = F.pad(input, (0, self.__dim_series - length), value=0.0)
         return self.__model(input)
 
 

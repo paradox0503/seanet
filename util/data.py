@@ -7,13 +7,13 @@ import subprocess
 from os.path import isfile
 from pathlib import Path
 from ctypes import CDLL, c_char_p, c_long
-from _ctypes import dlclose
 
 import torch
 import numpy as np
 from torch.utils.data import Dataset
 
 from util.conf import Configuration
+from util.multidata import sample_datasets
     
 
 class TSDataset(Dataset):
@@ -29,6 +29,11 @@ class TSDataset(Dataset):
 
 
 def getSamples(conf: Configuration):
+    if conf.getHP('datasets'):
+        train, val = sample_datasets(conf.getHP('datasets'), conf.getHP('torch_rdseed'))
+        return (torch.from_numpy(train).to(conf.getHP('device')),
+                torch.from_numpy(val).to(conf.getHP('device')))
+
     dim_series = conf.getHP('dim_series')
     size_train = conf.getHP('size_train')
     size_val = conf.getHP('size_val')
@@ -82,6 +87,7 @@ def sample(conf: Configuration):
     sampling_method = conf.getHP('sampling_name')
 
     if sampling_method == 'coconut':
+        from _ctypes import dlclose
         if not (os.path.exists(train_indices_path) and isfile(train_indices_path)) or not (os.path.exists(val_indices_path) and isfile(val_indices_path)):
             c_functions = CDLL(conf.getHP('coconut_libpath'))
 
@@ -166,13 +172,8 @@ def embedData(model, data_filepath, embedding_filepath, data_size, batch_size = 
     if encoder == 'gru' or encoder == 'lstm':
         is_rnn = True
 
-    num_segments = int(data_size / batch_size)
-
-    if data_size < batch_size:
-        num_segments = 1
-        batch_size = data_size
-    else: 
-        assert data_size % batch_size == 0
+    if data_size <= 0 or batch_size <= 0:
+        raise ValueError('data_size and batch_size must be positive')
 
     nan_replacement_original = np.array([0.] * original_dim).reshape([original_dim, 1] if is_rnn else [1, original_dim])
     nan_replacement_embedding = [0.] * embedded_dim
@@ -183,8 +184,11 @@ def embedData(model, data_filepath, embedding_filepath, data_size, batch_size = 
         with torch.no_grad():
             total_nans = 0
 
-            for segment in range(num_segments):
-                batch = np.fromfile(data_filepath, dtype=np.float32, count=original_dim * batch_size, offset=4 * original_dim * batch_size * segment)
+            for start in range(0, data_size, batch_size):
+                count = min(batch_size, data_size - start)
+                batch = np.fromfile(data_filepath, dtype=np.float32, count=original_dim * count, offset=4 * original_dim * start)
+                if batch.size != original_dim * count:
+                    raise ValueError('Incomplete records in %s' % data_filepath)
 
                 if is_rnn:
                     batch = batch.reshape([-1, original_dim, 1])

@@ -32,7 +32,7 @@
     "coconut_libpath": "./lib/coconut_sampling.so",
     "num_epoch": 100,
     "dilation_type": "exponential",
-    "dim_series": 96,
+    "dim_series": 256,
     "dim_embedding": 16,
     "dim_en_latent": 256,
     "dim_de_latent": 256,
